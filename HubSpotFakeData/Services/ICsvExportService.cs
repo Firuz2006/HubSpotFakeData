@@ -10,6 +10,7 @@ public interface ICsvExportService
     /// <summary>
     /// Exports CSV rows to a file
     /// </summary>
-    Task ExportToCsvAsync(List<CsvRow> rows, string filePath);
-}
+    Task<string> ExportCompaniesToCsvAsync(List<CsvCompany> rows, string timestamp);
 
+    Task<string> ExportContactsToCsvAsync(List<CsvContact> rows, string timestamp);
+}

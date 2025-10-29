@@ -10,31 +10,30 @@ internal static class Program
     private static async Task Main(string[] args)
     {
         var serviceProvider = ConfigureServices();
-        
+
         try
         {
             var logger = serviceProvider.GetRequiredService<ILogger<DataGenerationService>>();
             var mode = ParseGenerationMode(args);
-            
+
             logger.LogInformation("HubSpot Fake Data Generator");
             logger.LogInformation("Mode: {Mode}", mode);
             logger.LogInformation("Started at: {Time}", DateTime.Now);
-            
+
             var dataGenerator = serviceProvider.GetRequiredService<IDataGenerationService>();
             var csvExporter = serviceProvider.GetRequiredService<ICsvExportService>();
 
             logger.LogInformation("Generating data...");
             var rows = dataGenerator.Generate(mode);
-            
+
             var timestamp = DateTime.Now.ToString("yyyyMMdd_HHmmss");
-            var fileName = $"hubspot_import_{mode.ToString().ToLower()}_{timestamp}.csv";
-            var outputPath = Path.Combine("output", fileName);
-            
+
             logger.LogInformation("Exporting to CSV...");
-            await csvExporter.ExportToCsvAsync(rows, outputPath);
-            
+            var companiesPath = await csvExporter.ExportCompaniesToCsvAsync(rows, timestamp);
+            var contactsPath = await csvExporter.ExportContactsToCsvAsync(rows, timestamp);
+
             logger.LogInformation("Completed successfully!");
-            logger.LogInformation("Output file: {FilePath}", Path.GetFullPath(outputPath));
+            logger.LogInformation("Output file: {FilePath}", Path.GetFullPath(companiesPath));
             logger.LogInformation("Total rows: {Count}", rows.Count);
         }
         catch (Exception ex)
@@ -77,7 +76,7 @@ internal static class Program
                 {
                     return mode;
                 }
-                
+
                 throw new ArgumentException($"Invalid mode: {modeString}. Valid modes are: Test, Production");
             }
         }

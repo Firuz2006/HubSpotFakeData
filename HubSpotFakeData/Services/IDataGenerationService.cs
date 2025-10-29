@@ -10,6 +10,6 @@ public interface IDataGenerationService
     /// <summary>
     /// Generates CSV rows based on the specified mode
     /// </summary>
-    List<CsvRow> Generate(GenerationMode mode);
+    List<CsvCompany> Generate(GenerationMode mode);
 }
 
