@@ -1,0 +1,27 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HubSpotFakeData", "HubSpotFakeData\HubSpotFakeData.csproj", "{7EE4D213-82FA-4A43-BBA0-2B4CF2AEF7F5}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "SolutionItems", "SolutionItems", "{9C32D5E4-9746-4954-9999-33AB23FBEDFD}"
+	ProjectSection(SolutionItems) = preProject
+		README.md = README.md
+		contact-company-deal-import-template.csv = contact-company-deal-import-template.csv
+		HUBSPOT_IMPORT_USAGE.md = HUBSPOT_IMPORT_USAGE.md
+		IMPLEMENTATION_SUMMARY.md = IMPLEMENTATION_SUMMARY.md
+		QUICK_REFERENCE.md = QUICK_REFERENCE.md
+		SUMMARY.md = SUMMARY.md
+		USAGE.md = USAGE.md
+	EndProjectSection
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{7EE4D213-82FA-4A43-BBA0-2B4CF2AEF7F5}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{7EE4D213-82FA-4A43-BBA0-2B4CF2AEF7F5}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{7EE4D213-82FA-4A43-BBA0-2B4CF2AEF7F5}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{7EE4D213-82FA-4A43-BBA0-2B4CF2AEF7F5}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+EndGlobal
