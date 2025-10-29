@@ -7,9 +7,6 @@ namespace HubSpotFakeData.Services;
 /// </summary>
 public interface IDataGenerationService
 {
-    /// <summary>
-    /// Generates CSV rows based on the specified mode
-    /// </summary>
-    List<CsvCompany> Generate(GenerationMode mode);
+    GenerationResult Generate(GenerationMode mode);
 }
 

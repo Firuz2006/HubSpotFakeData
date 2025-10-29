@@ -24,17 +24,19 @@ internal static class Program
             var csvExporter = serviceProvider.GetRequiredService<ICsvExportService>();
 
             logger.LogInformation("Generating data...");
-            var rows = dataGenerator.Generate(mode);
+            var result = dataGenerator.Generate(mode);
 
             var timestamp = DateTime.Now.ToString("yyyyMMdd_HHmmss");
 
             logger.LogInformation("Exporting to CSV...");
-            var companiesPath = await csvExporter.ExportCompaniesToCsvAsync(rows, timestamp);
-            var contactsPath = await csvExporter.ExportContactsToCsvAsync(rows, timestamp);
+            var companiesPath = await csvExporter.ExportCompaniesToCsvAsync(result.Companies, timestamp);
+            var contactsPath = await csvExporter.ExportContactsToCsvAsync(result.Contacts, timestamp);
 
             logger.LogInformation("Completed successfully!");
-            logger.LogInformation("Output file: {FilePath}", Path.GetFullPath(companiesPath));
-            logger.LogInformation("Total rows: {Count}", rows.Count);
+            logger.LogInformation("Companies file: {FilePath}", Path.GetFullPath(companiesPath));
+            logger.LogInformation("Contacts file: {FilePath}", Path.GetFullPath(contactsPath));
+            logger.LogInformation("Total company rows: {Count}", result.Companies.Count);
+            logger.LogInformation("Total contact rows: {Count}", result.Contacts.Count);
         }
         catch (Exception ex)
         {

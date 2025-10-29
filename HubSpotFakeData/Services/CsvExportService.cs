@@ -64,12 +64,12 @@ public class CsvExportService(ILogger<CsvExportService> logger) : ICsvExportServ
         }
 
         var filePath = GetContactsPath(timestamp);
-        logger.LogInformation("Exporting {RowCount} companies to CSV at {FilePath}", rows.Count, filePath);
+        logger.LogInformation("Exporting {RowCount} contacts to CSV at {FilePath}", rows.Count, filePath);
 
         var csv = new StringBuilder();
 
         // Write headers with HubSpot object property tags
-        csv.AppendLine(CompanyHeader);
+        csv.AppendLine(ContactHeader);
 
         // Write data rows
         foreach (var row in rows)

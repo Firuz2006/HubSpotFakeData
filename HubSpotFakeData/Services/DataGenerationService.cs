@@ -4,9 +4,6 @@ using Microsoft.Extensions.Logging;
 
 namespace HubSpotFakeData.Services;
 
-/// <summary>
-///     Service for generating fake data using Bogus library
-/// </summary>
 public class DataGenerationService(ILogger<DataGenerationService> logger) : IDataGenerationService
 {
     private static readonly string[] DealStages =
@@ -20,10 +17,7 @@ public class DataGenerationService(ILogger<DataGenerationService> logger) : IDat
         "closedlost"
     ];
 
-    /// <summary>
-    ///     Generates CSV rows based on the specified mode
-    /// </summary>
-    public List<CsvCompany> Generate(GenerationMode mode)
+    public GenerationResult Generate(GenerationMode mode)
     {
         return mode switch
         {
@@ -33,214 +27,254 @@ public class DataGenerationService(ILogger<DataGenerationService> logger) : IDat
         };
     }
 
-    private List<CsvCompany> GenerateTestData()
+    private GenerationResult GenerateTestData()
     {
-        logger.LogInformation("Generating test data - 20 records with all association patterns");
+        logger.LogInformation("Generating test data");
 
-        var associationManager = new AssociationManager();
-        var csvRows = new List<CsvCompany>();
+        const int companyCount = 10;
+        const int contactCount = 9;
+        const int minDealCount = 18;
 
-        var companyFaker = CreateCompanyFaker();
-
-        var contactFaker = CreateContactFaker();
-
-        // Create 3 companies
-        var companyA = companyFaker.Generate();
-        var companyB = companyFaker.Generate();
-        var companyC = companyFaker.Generate();
-
-        associationManager.AddCompany(companyA);
-        associationManager.AddCompany(companyB);
-        associationManager.AddCompany(companyC);
-
-        // Create 4 contacts
-        var contact1 = contactFaker.Generate();
-        var contact2 = contactFaker.Generate();
-        var contact3 = contactFaker.Generate();
-        var contact4 = contactFaker.Generate();
-
-        associationManager.AddContact(contact1);
-        associationManager.AddContact(contact2);
-        associationManager.AddContact(contact3);
-        associationManager.AddContact(contact4);
-
-        // Associate contacts with companies
-        associationManager.AssociateContactWithCompany(contact1.Id, companyA.Id);
-        associationManager.AssociateContactWithCompany(contact1.Id, companyB.Id); // Many-to-many
-        associationManager.AssociateContactWithCompany(contact2.Id, companyA.Id);
-        associationManager.AssociateContactWithCompany(contact3.Id, companyB.Id);
-        associationManager.AssociateContactWithCompany(contact4.Id, companyC.Id);
-        associationManager.AssociateContactWithCompany(contact4.Id, companyA.Id); // Many-to-many
-
-        var dealFaker = new Faker();
-        var dealIndex = 0;
-
-        // Company A - 5 deals (demonstrating one company with multiple deals)
-        // Deal 1-3: Contact 1 with multiple deals
-        for (var i = 0; i < 3; i++)
-        {
-            var deal = CreateDeal(dealFaker, dealIndex++, companyA.Id, contact1.Id);
-            associationManager.AddDeal(deal);
-            csvRows.Add(CreateCsvRow(companyA, contact1, deal));
-        }
-
-        // Deal 4-5: Contact 2 with multiple deals
-        for (var i = 0; i < 2; i++)
-        {
-            var deal = CreateDeal(dealFaker, dealIndex++, companyA.Id, contact2.Id);
-            associationManager.AddDeal(deal);
-            csvRows.Add(CreateCsvRow(companyA, contact2, deal));
-        }
-
-        // Company B - 4 deals
-        // Deal 6-8: Contact 1 with Company B (demonstrating many-to-many: contact works with multiple companies)
-        for (var i = 0; i < 3; i++)
-        {
-            var deal = CreateDeal(dealFaker, dealIndex++, companyB.Id, contact1.Id);
-            associationManager.AddDeal(deal);
-            csvRows.Add(CreateCsvRow(companyB, contact1, deal));
-        }
-
-        // Deal 9: Contact 3
-        var deal9 = CreateDeal(dealFaker, dealIndex++, companyB.Id, contact3.Id);
-        associationManager.AddDeal(deal9);
-        csvRows.Add(CreateCsvRow(companyB, contact3, deal9));
-
-        // Company C - 6 deals
-        // Deal 10-12: Contact 4 with multiple deals
-        for (var i = 0; i < 3; i++)
-        {
-            var deal = CreateDeal(dealFaker, dealIndex++, companyC.Id, contact4.Id);
-            associationManager.AddDeal(deal);
-            csvRows.Add(CreateCsvRow(companyC, contact4, deal));
-        }
-
-        // Deal 13-15: Contact 2 with Company C (cross-company association)
-        for (var i = 0; i < 3; i++)
-        {
-            var deal = CreateDeal(dealFaker, dealIndex++, companyC.Id, contact2.Id);
-            associationManager.AddDeal(deal);
-            csvRows.Add(CreateCsvRow(companyC, contact2, deal));
-        }
-
-        // Additional deals to reach 20
-        var deal16 = CreateDeal(dealFaker, dealIndex++, companyA.Id, contact4.Id);
-        associationManager.AddDeal(deal16);
-        csvRows.Add(CreateCsvRow(companyA, contact4, deal16));
-
-        var deal17 = CreateDeal(dealFaker, dealIndex++, companyB.Id, contact2.Id);
-        associationManager.AddDeal(deal17);
-        csvRows.Add(CreateCsvRow(companyB, contact2, deal17));
-
-        var deal18 = CreateDeal(dealFaker, dealIndex++, companyC.Id, contact1.Id);
-        associationManager.AddDeal(deal18);
-        csvRows.Add(CreateCsvRow(companyC, contact1, deal18));
-
-        var deal19 = CreateDeal(dealFaker, dealIndex++, companyA.Id, contact3.Id);
-        associationManager.AddDeal(deal19);
-        csvRows.Add(CreateCsvRow(companyA, contact3, deal19));
-
-        var deal20 = CreateDeal(dealFaker, dealIndex++, companyB.Id, contact4.Id);
-        associationManager.AddDeal(deal20);
-        csvRows.Add(CreateCsvRow(companyB, contact4, deal20));
-
-        LogTestModeStatistics(associationManager);
-
-        return csvRows;
-    }
-
-
-    private List<CsvCompany> GenerateProductionData()
-    {
-        logger.LogInformation("Generating production data - 10,000 records");
-
-        var associationManager = new AssociationManager();
-        var csvRows = new List<CsvCompany>();
+        var manager = new AssociationManager();
         var random = new Random();
 
-        var companyFaker = CreateCompanyFaker();
-
-        var contactFaker = CreateContactFaker();
-
-        var dealFaker = new Faker();
-
-        // Generate 650 companies
-        const int companyCount = 650;
-        logger.LogInformation("Generating {Count} companies", companyCount);
-        for (var i = 0; i < companyCount; i++)
-        {
-            var company = companyFaker.Generate();
-            associationManager.AddCompany(company);
-        }
-
-        // Generate 2,500 contacts
-        const int contactCount = 2500;
-        logger.LogInformation("Generating {Count} contacts", contactCount);
-        for (var i = 0; i < contactCount; i++)
-        {
-            var contact = contactFaker.Generate();
-            associationManager.AddContact(contact);
-        }
-
-        var companies = associationManager.GetAllCompanies();
-        var contacts = associationManager.GetAllContacts();
-
-        // Associate contacts with companies (3-5 contacts per company on average)
-        logger.LogInformation("Creating company-contact associations");
+        var companies = GenerateCompanies(companyCount);
         foreach (var company in companies)
-        {
-            var contactsPerCompany = random.Next(3, 6);
-            var selectedContacts = contacts.OrderBy(_ => random.Next()).Take(contactsPerCompany);
+            manager.AddCompany(company);
 
-            foreach (var contact in selectedContacts)
-                associationManager.AssociateContactWithCompany(contact.Id, company.Id);
-        }
+        var contacts = GenerateContacts(contactCount, companies, random, 0.9, 0.25);
+        foreach (var contact in contacts)
+            manager.AddContact(contact);
 
-        // Ensure 20-30% of contacts are associated with multiple companies
-        var contactsForMultipleCompanies = (int)(contactCount * 0.25);
-        logger.LogInformation("Creating multi-company associations for {Count} contacts", contactsForMultipleCompanies);
+        AssociateContactsWithCompanies(manager, companies, contacts, random, 0.9, 0.25);
 
-        var shuffledContacts = contacts.OrderBy(_ => random.Next()).Take(contactsForMultipleCompanies);
-        foreach (var contact in shuffledContacts)
-        {
-            var additionalCompanyCount = random.Next(1, 3);
-            var additionalCompanies = companies.OrderBy(_ => random.Next()).Take(additionalCompanyCount);
+        var deals = GenerateDeals(manager, companies, contacts, random, minDealCount, 0.9, 0.05);
+        foreach (var deal in deals)
+            manager.AddDeal(deal);
 
-            foreach (var company in additionalCompanies)
-                associationManager.AssociateContactWithCompany(contact.Id, company.Id);
-        }
+        var result = BuildCsvRows(manager);
 
-        // Generate 10,000 deals
-        const int dealCount = 10000;
-        logger.LogInformation("Generating {Count} deals", dealCount);
+        LogStatistics(manager, "Test");
 
-        for (var i = 0; i < dealCount; i++)
-        {
-            if (i > 0 && i % 1000 == 0) logger.LogInformation("Generated {Count}/{Total} deals", i, dealCount);
-
-            // Select random company
-            var company = companies[random.Next(companies.Count)];
-
-            // Get contacts associated with this company
-            var companyContacts = associationManager.GetContactsForCompany(company.Id);
-
-            // Select random contact from company's contacts
-            var contact = companyContacts.Count > 0
-                ? companyContacts[random.Next(companyContacts.Count)]
-                : contacts[random.Next(contacts.Count)];
-
-            var deal = CreateDeal(dealFaker, i, company.Id, contact.Id);
-            associationManager.AddDeal(deal);
-
-            csvRows.Add(CreateCsvRow(company, contact, deal));
-        }
-
-        LogProductionModeStatistics(associationManager);
-
-        return csvRows;
+        return result;
     }
 
-    private static Deal CreateDeal(Faker faker, int index, Guid companyId, Guid contactId)
+    private GenerationResult GenerateProductionData()
+    {
+        logger.LogInformation("Generating production data");
+
+        const int companyCount = 10000;
+        const int contactCount = 9000;
+        const int minDealCount = 18000;
+
+        var manager = new AssociationManager();
+        var random = new Random();
+
+        logger.LogInformation("Generating {Count} companies", companyCount);
+        var companies = GenerateCompanies(companyCount);
+        foreach (var company in companies)
+            manager.AddCompany(company);
+
+        logger.LogInformation("Generating {Count} contacts", contactCount);
+        var contacts = GenerateContacts(contactCount, companies, random, 0.9, 0.25);
+        foreach (var contact in contacts)
+            manager.AddContact(contact);
+
+        logger.LogInformation("Creating company-contact associations");
+        AssociateContactsWithCompanies(manager, companies, contacts, random, 0.9, 0.25);
+
+        logger.LogInformation("Generating deals (minimum {Count})", minDealCount);
+        var deals = GenerateDeals(manager, companies, contacts, random, minDealCount, 0.9, 0.05);
+        foreach (var deal in deals)
+            manager.AddDeal(deal);
+
+        logger.LogInformation("Building CSV rows");
+        var result = BuildCsvRows(manager);
+
+        LogStatistics(manager, "Production");
+
+        return result;
+    }
+
+    private List<Company> GenerateCompanies(int count)
+    {
+        var faker = new Faker<Company>()
+            .CustomInstantiator(f => new Company(
+                Guid.NewGuid(),
+                f.Internet.DomainName(),
+                f.Company.CompanyName(),
+                f.Address.StreetAddress(),
+                f.Address.City(),
+                f.Address.StateAbbr(),
+                f.Address.ZipCode(),
+                f.Phone.PhoneNumber()
+            ));
+
+        return faker.Generate(count);
+    }
+
+    private List<Contact> GenerateContacts(List<Company> companies, Random random, double oneToOnePercentage, double manyToManyPercentage)
+    {
+        var contactCount = (int)(companies.Count * 0.9);
+        return GenerateContacts(contactCount, companies, random, oneToOnePercentage, manyToManyPercentage);
+    }
+
+    private List<Contact> GenerateContacts(int count, List<Company> companies, Random random, double oneToOnePercentage, double manyToManyPercentage)
+    {
+        var contacts = new List<Contact>();
+        var faker = new Faker();
+
+        var oneToOneCount = (int)(count * oneToOnePercentage);
+
+        for (var i = 0; i < count; i++)
+        {
+            var email = "";
+            
+            if (i < oneToOneCount && i < companies.Count)
+            {
+                var company = companies[i];
+                var username = faker.Internet.UserName().ToLower();
+                email = $"{username}@{company.Domain}";
+            }
+            else
+            {
+                email = faker.Internet.Email();
+            }
+
+            var contact = new Contact(
+                Guid.NewGuid(),
+                email,
+                faker.Name.FirstName(),
+                faker.Name.LastName(),
+                faker.Address.StreetAddress(),
+                faker.Address.City(),
+                faker.Address.StateAbbr(),
+                faker.Address.ZipCode(),
+                faker.Phone.PhoneNumber()
+            );
+
+            contacts.Add(contact);
+        }
+
+        return contacts;
+    }
+
+    private void AssociateContactsWithCompanies(AssociationManager manager, List<Company> companies, List<Contact> contacts, Random random, double oneToOnePercentage, double manyToManyPercentage)
+    {
+        var oneToOneCount = (int)(contacts.Count * oneToOnePercentage);
+        var manyToManyCount = (int)(contacts.Count * manyToManyPercentage);
+
+        for (var i = 0; i < contacts.Count; i++)
+        {
+            var contact = contacts[i];
+
+            if (i < oneToOneCount)
+            {
+                var companyIndex = i < companies.Count ? i : random.Next(companies.Count);
+                manager.AssociateContactWithCompany(contact.Id, companies[companyIndex].Id);
+            }
+
+            if (i < manyToManyCount)
+            {
+                var additionalCount = random.Next(1, 4);
+                for (var j = 0; j < additionalCount; j++)
+                {
+                    var randomCompany = companies[random.Next(companies.Count)];
+                    manager.AssociateContactWithCompany(contact.Id, randomCompany.Id);
+                }
+            }
+        }
+    }
+
+    private List<Deal> GenerateDeals(AssociationManager manager, List<Company> companies, List<Contact> contacts, Random random, int minDealCount, double entityDealPercentage, double multipleDealPercentage)
+    {
+        var deals = new List<Deal>();
+        var faker = new Faker();
+
+        var companiesWithDeals = (int)(companies.Count * entityDealPercentage);
+        var contactsWithDeals = (int)(contacts.Count * entityDealPercentage);
+        var companiesWithMultipleDeals = (int)(companies.Count * multipleDealPercentage);
+        var contactsWithMultipleDeals = (int)(contacts.Count * multipleDealPercentage);
+
+        var dealIndex = 0;
+
+        for (var i = 0; i < companiesWithDeals && deals.Count < minDealCount; i++)
+        {
+            var company = companies[i % companies.Count];
+            var companyContacts = manager.GetContactsForCompany(company.Id);
+            
+            Contact contact;
+            if (companyContacts.Count > 0)
+            {
+                contact = companyContacts[random.Next(companyContacts.Count)];
+            }
+            else
+            {
+                contact = contacts[random.Next(contacts.Count)];
+                manager.AssociateContactWithCompany(contact.Id, company.Id);
+            }
+
+            var dealCount = i < companiesWithMultipleDeals ? random.Next(2, 4) : 1;
+
+            for (var j = 0; j < dealCount; j++)
+            {
+                var deal = CreateDeal(faker, dealIndex++, company.Id, contact.Id);
+                deals.Add(deal);
+            }
+        }
+
+        for (var i = 0; i < contactsWithDeals && deals.Count < minDealCount; i++)
+        {
+            var contact = contacts[i % contacts.Count];
+            var contactCompanies = manager.GetCompaniesForContact(contact.Id);
+
+            Company company;
+            if (contactCompanies.Count > 0)
+            {
+                company = contactCompanies[random.Next(contactCompanies.Count)];
+            }
+            else
+            {
+                company = companies[random.Next(companies.Count)];
+                manager.AssociateContactWithCompany(contact.Id, company.Id);
+            }
+
+            if (manager.GetDealCountForContact(contact.Id) > 0)
+                continue;
+
+            var dealCount = i < contactsWithMultipleDeals ? random.Next(2, 4) : 1;
+
+            for (var j = 0; j < dealCount; j++)
+            {
+                var deal = CreateDeal(faker, dealIndex++, company.Id, contact.Id);
+                deals.Add(deal);
+            }
+        }
+
+        while (deals.Count < minDealCount)
+        {
+            var company = companies[random.Next(companies.Count)];
+            var companyContacts = manager.GetContactsForCompany(company.Id);
+
+            Contact contact;
+            if (companyContacts.Count > 0)
+            {
+                contact = companyContacts[random.Next(companyContacts.Count)];
+            }
+            else
+            {
+                contact = contacts[random.Next(contacts.Count)];
+                manager.AssociateContactWithCompany(contact.Id, company.Id);
+            }
+
+            var deal = CreateDeal(faker, dealIndex++, company.Id, contact.Id);
+            deals.Add(deal);
+        }
+
+        return deals;
+    }
+
+    private Deal CreateDeal(Faker faker, int index, Guid companyId, Guid contactId)
     {
         var stage = faker.PickRandom(DealStages);
         var dealName = $"{faker.Commerce.ProductName()} - {faker.Commerce.Department()} #{index + 1}";
@@ -261,114 +295,111 @@ public class DataGenerationService(ILogger<DataGenerationService> logger) : IDat
         );
     }
 
-    private static CsvCompany CreateCsvRow(Company company, Contact contact, Deal deal)
-    {
-        return new CsvCompany(
-            company.Domain,
-            company.Name,
-            company.Address,
-            company.City,
-            company.State,
-            company.Zip,
-            company.PhoneNumber,
-            contact.Email,
-            contact.FirstName,
-            contact.LastName,
-            contact.Address,
-            contact.City,
-            contact.State,
-            contact.Zip,
-            contact.Phone,
-            deal.Stage,
-            deal.Pipeline,
-            deal.Name,
-            deal.Description,
-            deal.Amount,
-            deal.CloseDate
-        );
-    }
-
-    private void LogTestModeStatistics(AssociationManager manager)
+    private GenerationResult BuildCsvRows(AssociationManager manager)
     {
         var companies = manager.GetAllCompanies();
-        var contacts = manager.GetAllContacts();
-
-        logger.LogInformation("=== Test Mode Statistics ===");
-        logger.LogInformation("Total Companies: {Count}", companies.Count);
-        logger.LogInformation("Total Contacts: {Count}", contacts.Count);
-        logger.LogInformation("Total Deals: {Count}", manager.GetAllDeals().Count);
+        var companyCsvRows = new List<CsvCompany>();
 
         foreach (var company in companies)
         {
-            var contactCount = manager.GetContactsForCompany(company.Id).Count;
-            var dealCount = manager.GetDealCountForCompany(company.Id);
-            logger.LogInformation("Company '{Name}': {ContactCount} contacts, {DealCount} deals",
-                company.Name, contactCount, dealCount);
+            var deals = manager.GetDealsForCompany(company.Id);
+            
+            foreach (var deal in deals)
+            {
+                var csvRow = new CsvCompany(
+                    company.Domain,
+                    company.Name,
+                    company.Address,
+                    company.City,
+                    company.State,
+                    company.Zip,
+                    company.PhoneNumber,
+                    deal.Stage,
+                    deal.Pipeline,
+                    deal.Name,
+                    deal.Description,
+                    deal.Amount,
+                    deal.CloseDate
+                );
+                companyCsvRows.Add(csvRow);
+            }
         }
+
+        var contacts = manager.GetAllContacts();
+        var contactCsvRows = new List<CsvContact>();
 
         foreach (var contact in contacts)
         {
-            var companyCount = manager.GetCompanyCountForContact(contact.Id);
-            var dealCount = manager.GetDealCountForContact(contact.Id);
-            logger.LogInformation("Contact '{Email}': {CompanyCount} companies, {DealCount} deals",
-                contact.Email, companyCount, dealCount);
+            var deals = manager.GetDealsForContact(contact.Id);
+            
+            foreach (var deal in deals)
+            {
+                var csvRow = new CsvContact(
+                    contact.Email,
+                    contact.FirstName,
+                    contact.LastName,
+                    contact.Address,
+                    contact.City,
+                    contact.State,
+                    contact.Zip,
+                    contact.Phone,
+                    deal.Stage,
+                    deal.Pipeline,
+                    deal.Name,
+                    deal.Description,
+                    deal.Amount,
+                    deal.CloseDate
+                );
+                contactCsvRows.Add(csvRow);
+            }
         }
+
+        return new GenerationResult(companyCsvRows, contactCsvRows);
     }
 
-    private void LogProductionModeStatistics(AssociationManager manager)
+    private void LogStatistics(AssociationManager manager, string mode)
     {
         var companies = manager.GetAllCompanies();
         var contacts = manager.GetAllContacts();
         var deals = manager.GetAllDeals();
 
-        logger.LogInformation("=== Production Mode Statistics ===");
+        logger.LogInformation("=== {Mode} Mode Statistics ===", mode);
         logger.LogInformation("Total Companies: {Count}", companies.Count);
         logger.LogInformation("Total Contacts: {Count}", contacts.Count);
         logger.LogInformation("Total Deals: {Count}", deals.Count);
 
+        var companiesWithDeals = companies.Count(c => manager.GetDealCountForCompany(c.Id) > 0);
+        var companiesWithMultipleDeals = companies.Count(c => manager.GetDealCountForCompany(c.Id) > 1);
+        var contactsWithDeals = contacts.Count(c => manager.GetDealCountForContact(c.Id) > 0);
+        var contactsWithMultipleDeals = contacts.Count(c => manager.GetDealCountForContact(c.Id) > 1);
+        var contactsWithCompanies = contacts.Count(c => manager.GetCompanyCountForContact(c.Id) > 0);
         var contactsWithMultipleCompanies = contacts.Count(c => manager.GetCompanyCountForContact(c.Id) > 1);
-        var multipleCompanyPercentage = (double)contactsWithMultipleCompanies / contacts.Count * 100;
 
-        logger.LogInformation("Contacts with multiple companies: {Count} ({Percentage:F1}%)",
-            contactsWithMultipleCompanies, multipleCompanyPercentage);
+        logger.LogInformation("Companies with deals: {Count} ({Percentage:F1}%)", 
+            companiesWithDeals, (double)companiesWithDeals / companies.Count * 100);
+        logger.LogInformation("Companies with multiple deals: {Count} ({Percentage:F1}%)", 
+            companiesWithMultipleDeals, (double)companiesWithMultipleDeals / companies.Count * 100);
+        logger.LogInformation("Contacts with deals: {Count} ({Percentage:F1}%)", 
+            contactsWithDeals, (double)contactsWithDeals / contacts.Count * 100);
+        logger.LogInformation("Contacts with multiple deals: {Count} ({Percentage:F1}%)", 
+            contactsWithMultipleDeals, (double)contactsWithMultipleDeals / contacts.Count * 100);
+        logger.LogInformation("Contacts with companies: {Count} ({Percentage:F1}%)", 
+            contactsWithCompanies, (double)contactsWithCompanies / contacts.Count * 100);
+        logger.LogInformation("Contacts with multiple companies: {Count} ({Percentage:F1}%)", 
+            contactsWithMultipleCompanies, (double)contactsWithMultipleCompanies / contacts.Count * 100);
 
-        var avgContactsPerCompany = companies.Average(c => manager.GetContactsForCompany(c.Id).Count);
-        var avgDealsPerContact = contacts.Average(c => manager.GetDealCountForContact(c.Id));
-        var avgDealsPerCompany = companies.Average(c => manager.GetDealCountForCompany(c.Id));
+        if (companies.Count > 0)
+        {
+            var avgDealsPerCompany = companies.Average(c => manager.GetDealCountForCompany(c.Id));
+            logger.LogInformation("Average deals per company: {Avg:F2}", avgDealsPerCompany);
+        }
 
-        logger.LogInformation("Average contacts per company: {Avg:F2}", avgContactsPerCompany);
-        logger.LogInformation("Average deals per contact: {Avg:F2}", avgDealsPerContact);
-        logger.LogInformation("Average deals per company: {Avg:F2}", avgDealsPerCompany);
-    }
-
-    private static Faker<Contact> CreateContactFaker()
-    {
-        return new Faker<Contact>()
-            .CustomInstantiator(f => new Contact(
-                Guid.NewGuid(),
-                f.Internet.Email(),
-                f.Name.FirstName(),
-                f.Name.LastName(),
-                f.Address.StreetAddress(),
-                f.Address.City(),
-                f.Address.StateAbbr(),
-                f.Address.ZipCode(),
-                f.Phone.PhoneNumber()
-            ));
-    }
-
-    private static Faker<Company> CreateCompanyFaker()
-    {
-        return new Faker<Company>()
-            .CustomInstantiator(f => new Company(
-                Guid.NewGuid(),
-                f.Internet.DomainName(),
-                f.Company.CompanyName(),
-                f.Address.StreetAddress(),
-                f.Address.City(),
-                f.Address.StateAbbr(),
-                f.Address.ZipCode(),
-                f.Phone.PhoneNumber()
-            ));
+        if (contacts.Count > 0)
+        {
+            var avgDealsPerContact = contacts.Average(c => manager.GetDealCountForContact(c.Id));
+            var avgCompaniesPerContact = contacts.Average(c => manager.GetCompanyCountForContact(c.Id));
+            logger.LogInformation("Average deals per contact: {Avg:F2}", avgDealsPerContact);
+            logger.LogInformation("Average companies per contact: {Avg:F2}", avgCompaniesPerContact);
+        }
     }
 }

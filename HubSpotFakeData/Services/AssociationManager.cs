@@ -110,5 +110,21 @@ public class AssociationManager
     /// Gets number of companies associated with a contact
     /// </summary>
     public int GetCompanyCountForContact(Guid contactId) => _contactCompanies[contactId].Count;
+
+    /// <summary>
+    /// Gets deals for a company
+    /// </summary>
+    public List<Deal> GetDealsForCompany(Guid companyId)
+    {
+        return _companyDeals[companyId].Select(id => _deals[id]).ToList();
+    }
+
+    /// <summary>
+    /// Gets deals for a contact
+    /// </summary>
+    public List<Deal> GetDealsForContact(Guid contactId)
+    {
+        return _contactDeals[contactId].Select(id => _deals[id]).ToList();
+    }
 }
 
