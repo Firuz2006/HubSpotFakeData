@@ -107,7 +107,7 @@ public class DataGenerationService(ILogger<DataGenerationService> logger) : IDat
                 f.Address.City(),
                 f.Address.StateAbbr(),
                 f.Address.ZipCode(),
-                f.Phone.PhoneNumber()
+                f.Phone.PhoneNumber("###-###-####")
             ));
 
         return faker.Generate(count);
@@ -150,7 +150,7 @@ public class DataGenerationService(ILogger<DataGenerationService> logger) : IDat
                 faker.Address.City(),
                 faker.Address.StateAbbr(),
                 faker.Address.ZipCode(),
-                faker.Phone.PhoneNumber()
+                faker.Phone.PhoneNumber("###-###-####")
             );
 
             contacts.Add(contact);
