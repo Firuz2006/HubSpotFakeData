@@ -29,14 +29,17 @@ internal static class Program
             var timestamp = DateTime.Now.ToString("yyyyMMdd_HHmmss");
 
             logger.LogInformation("Exporting to CSV...");
-            var companiesPath = await csvExporter.ExportCompaniesToCsvAsync(result.Companies, timestamp);
-            var contactsPath = await csvExporter.ExportContactsToCsvAsync(result.Contacts, timestamp);
+            var companyContactsPath = await csvExporter.ExportCompanyContactsToCsvAsync(result.CompanyContacts, timestamp);
+            var companyDealsPath = await csvExporter.ExportCompanyDealsToCsvAsync(result.CompanyDeals, timestamp);
+            var contactDealsPath = await csvExporter.ExportContactDealsToCsvAsync(result.ContactDeals, timestamp);
 
             logger.LogInformation("Completed successfully!");
-            logger.LogInformation("Companies file: {FilePath}", Path.GetFullPath(companiesPath));
-            logger.LogInformation("Contacts file: {FilePath}", Path.GetFullPath(contactsPath));
-            logger.LogInformation("Total company rows: {Count}", result.Companies.Count);
-            logger.LogInformation("Total contact rows: {Count}", result.Contacts.Count);
+            logger.LogInformation("Company-Contact file: {FilePath}", Path.GetFullPath(companyContactsPath));
+            logger.LogInformation("Company-Deal file: {FilePath}", Path.GetFullPath(companyDealsPath));
+            logger.LogInformation("Contact-Deal file: {FilePath}", Path.GetFullPath(contactDealsPath));
+            logger.LogInformation("Total company-contact rows: {Count}", result.CompanyContacts.Count);
+            logger.LogInformation("Total company-deal rows: {Count}", result.CompanyDeals.Count);
+            logger.LogInformation("Total contact-deal rows: {Count}", result.ContactDeals.Count);
         }
         catch (Exception ex)
         {

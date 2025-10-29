@@ -52,7 +52,7 @@
 
         .file-inputs {
             display: grid;
-            grid-template-columns: 1fr 1fr;
+            grid-template-columns: 1fr 1fr 1fr;
             gap: 20px;
             margin-bottom: 20px;
         }
@@ -233,12 +233,16 @@
         <div class="upload-section">
             <div class="file-inputs">
                 <div class="file-input-group">
-                    <label for="companyFile">📊 Companies CSV File</label>
-                    <input type="file" id="companyFile" accept=".csv">
+                    <label for="companyContactFile">📊 Company-Contact CSV File</label>
+                    <input type="file" id="companyContactFile" accept=".csv">
                 </div>
                 <div class="file-input-group">
-                    <label for="contactFile">👥 Contacts CSV File</label>
-                    <input type="file" id="contactFile" accept=".csv">
+                    <label for="companyDealFile">🏢 Company-Deal CSV File</label>
+                    <input type="file" id="companyDealFile" accept=".csv">
+                </div>
+                <div class="file-input-group">
+                    <label for="contactDealFile">👥 Contact-Deal CSV File</label>
+                    <input type="file" id="contactDealFile" accept=".csv">
                 </div>
             </div>
             <button id="loadBtn" onclick="loadFiles()">Load and Display Tree</button>
@@ -250,8 +254,9 @@
             <div id="errorSection"></div>
             <input type="text" id="searchBox" class="search-box hidden" placeholder="Search companies, contacts, or deals...">
             <div id="treeView" class="tree-view"></div>
-        </div>
-    </div>
+        let companyContactData = [];
+        let companyDealData = [];
+        let contactDealData = [];
 
     <script>
         let companiesData = [];
@@ -303,16 +308,17 @@
             }
             
             result.push(current.trim());
-            return result;
-        }
+            const companyContactFile = document.getElementById('companyContactFile').files[0];
+            const companyDealFile = document.getElementById('companyDealFile').files[0];
+            const contactDealFile = document.getElementById('contactDealFile').files[0];
 
         async function loadFiles() {
             const companyFile = document.getElementById('companyFile').files[0];
             const contactFile = document.getElementById('contactFile').files[0];
             const errorSection = document.getElementById('errorSection');
             const treeView = document.getElementById('treeView');
-            
-            errorSection.innerHTML = '';
+            if (!companyContactFile || !companyDealFile || !contactDealFile) {
+                errorSection.innerHTML = '<div class="error">⚠️ Please select all three CSV files</div>';
             treeView.innerHTML = '';
             
             if (!companyFile || !contactFile) {
@@ -320,14 +326,16 @@
                 return;
             }
             
-            document.getElementById('loadBtn').disabled = true;
-            treeView.innerHTML = '<div class="loading">⏳ Loading and processing data...</div>';
+                const companyContactText = await companyContactFile.text();
+                const companyDealText = await companyDealFile.text();
+                const contactDealText = await contactDealFile.text();
             
-            try {
-                const companyText = await companyFile.text();
+                companyContactData = parseCSV(companyContactText);
+                companyDealData = parseCSV(companyDealText);
+                contactDealData = parseCSV(contactDealText);
                 const contactText = await contactFile.text();
-                
-                companiesData = parseCSV(companyText);
+                if (companyContactData.length === 0 || companyDealData.length === 0 || contactDealData.length === 0) {
+                    throw new Error('One or more CSV files are empty or invalid');
                 contactsData = parseCSV(contactText);
                 
                 if (companiesData.length === 0 || contactsData.length === 0) {
@@ -347,9 +355,9 @@
                 document.getElementById('loadBtn').disabled = false;
             }
         }
-
+            companyContactData.forEach(row => {
         function buildTree() {
-            treeData = {};
+                const email = extractValue(row, 'email');
             
             companiesData.forEach(row => {
                 const domain = extractValue(row, 'domain');
@@ -362,34 +370,10 @@
                             name: extractValue(row, 'name'),
                             address: extractValue(row, 'address'),
                             city: extractValue(row, 'city'),
-                            state: extractValue(row, 'state'),
+                        contacts: {},
+                        companyDeals: []
                             zip: extractValue(row, 'zip'),
                             phone: extractValue(row, 'phone')
-                        },
-                        contacts: {}
-                    };
-                }
-                
-                const deal = {
-                    name: dealName,
-                    stage: extractValue(row, 'dealstage'),
-                    pipeline: extractValue(row, 'pipeline'),
-                    description: extractValue(row, 'description'),
-                    amount: extractValue(row, 'amount'),
-                    closeDate: extractValue(row, 'closedate')
-                };
-                
-                if (!treeData[domain].companyDeals) {
-                    treeData[domain].companyDeals = [];
-                }
-                treeData[domain].companyDeals.push(deal);
-            });
-            
-            contactsData.forEach(row => {
-                const email = extractValue(row, 'email');
-                const domain = email.split('@')[1];
-                const dealName = extractValue(row, 'dealname');
-                
                 if (!treeData[domain]) {
                     console.warn(`Domain ${domain} not found for contact ${email}`);
                     return;
@@ -404,9 +388,39 @@
                         city: extractValue(row, 'city'),
                         state: extractValue(row, 'state'),
                         zip: extractValue(row, 'zip'),
+            });
+            
+            companyDealData.forEach(row => {
+                const domain = extractValue(row, 'domain');
+                
+                if (!treeData[domain]) {
+                    console.warn(`Domain ${domain} not found in company-contact data`);
+                    return;
+                }
                         phone: extractValue(row, 'phone'),
                         deals: []
-                    };
+                    name: extractValue(row, 'dealname'),
+                    stage: extractValue(row, 'dealstage'),
+                    pipeline: extractValue(row, 'pipeline'),
+                    description: extractValue(row, 'description'),
+                    amount: extractValue(row, 'amount'),
+                    closeDate: extractValue(row, 'closedate')
+                };
+                
+                treeData[domain].companyDeals.push(deal);
+            });
+            
+            contactDealData.forEach(row => {
+                const email = extractValue(row, 'email');
+                const domain = email.split('@')[1];
+                
+                if (!treeData[domain] || !treeData[domain].contacts[email]) {
+                    console.warn(`Contact ${email} not found in company-contact data`);
+                    return;
+                }
+                
+                const deal = {
+                    name: extractValue(row, 'dealname'),
                 }
                 
                 const deal = {
@@ -437,7 +451,7 @@
             
             const domains = Object.keys(treeData).sort();
             
-            domains.forEach(domain => {
+                const companyDealCount = (data.companyDeals || []).length;
                 const data = treeData[domain];
                 const company = data.company;
                 const contactCount = Object.keys(data.contacts).length;
@@ -446,7 +460,7 @@
                 html += `
                     <div class="company-node" data-domain="${domain}">
                         <div class="company-header">
-                            🏢 Company: ${company.name} (${domain})
+                        <div class="company-detail">👥 ${contactCount} contact(s) | 💼 ${companyDealCount} deal(s)</div>
                         </div>
                         <div class="company-detail">📍 ${company.address}, ${company.city}, ${company.state} ${company.zip}</div>
                         <div class="company-detail">📞 ${company.phone}</div>
@@ -493,6 +507,9 @@
             let dealCount = 0;
             
             Object.values(treeData).forEach(data => {
+            const avgContactsPerCompany = companyCount > 0 ? (contactCount / companyCount).toFixed(1) : 0;
+            const avgDealsPerCompany = companyCount > 0 ? (dealCount / companyCount).toFixed(1) : 0;
+            
                 contactCount += Object.keys(data.contacts).length;
                 dealCount += (data.companyDeals || []).length;
             });
@@ -507,7 +524,11 @@
                     <div class="stat-label">Contacts</div>
                 </div>
                 <div class="stat-card">
-                    <div class="stat-number">${dealCount}</div>
+                    <div class="stat-number">${avgContactsPerCompany}</div>
+                    <div class="stat-label">Avg Contacts/Company</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number">${avgDealsPerCompany}</div>
                     <div class="stat-label">Deals</div>
                 </div>
                 <div class="stat-card">

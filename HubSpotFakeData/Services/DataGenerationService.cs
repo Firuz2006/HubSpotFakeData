@@ -298,15 +298,19 @@ public class DataGenerationService(ILogger<DataGenerationService> logger) : IDat
     private GenerationResult BuildCsvRows(AssociationManager manager)
     {
         var companies = manager.GetAllCompanies();
-        var companyCsvRows = new List<CsvCompany>();
+        var contacts = manager.GetAllContacts();
+        
+        var companyContactRows = new List<CsvCompanyContact>();
+        var companyDealRows = new List<CsvCompanyDeal>();
+        var contactDealRows = new List<CsvContactDeal>();
 
         foreach (var company in companies)
         {
-            var deals = manager.GetDealsForCompany(company.Id);
+            var companyContacts = manager.GetContactsForCompany(company.Id);
             
-            foreach (var deal in deals)
+            foreach (var contact in companyContacts)
             {
-                var csvRow = new CsvCompany(
+                var row = new CsvCompanyContact(
                     company.Domain,
                     company.Name,
                     company.Address,
@@ -314,27 +318,6 @@ public class DataGenerationService(ILogger<DataGenerationService> logger) : IDat
                     company.State,
                     company.Zip,
                     company.PhoneNumber,
-                    deal.Stage,
-                    deal.Pipeline,
-                    deal.Name,
-                    deal.Description,
-                    deal.Amount,
-                    deal.CloseDate
-                );
-                companyCsvRows.Add(csvRow);
-            }
-        }
-
-        var contacts = manager.GetAllContacts();
-        var contactCsvRows = new List<CsvContact>();
-
-        foreach (var contact in contacts)
-        {
-            var deals = manager.GetDealsForContact(contact.Id);
-            
-            foreach (var deal in deals)
-            {
-                var csvRow = new CsvContact(
                     contact.Email,
                     contact.FirstName,
                     contact.LastName,
@@ -342,7 +325,20 @@ public class DataGenerationService(ILogger<DataGenerationService> logger) : IDat
                     contact.City,
                     contact.State,
                     contact.Zip,
-                    contact.Phone,
+                    contact.Phone
+                );
+                companyContactRows.Add(row);
+            }
+        }
+
+        foreach (var company in companies)
+        {
+            var deals = manager.GetDealsForCompany(company.Id);
+            
+            foreach (var deal in deals)
+            {
+                var row = new CsvCompanyDeal(
+                    company.Domain,
                     deal.Stage,
                     deal.Pipeline,
                     deal.Name,
@@ -350,11 +346,30 @@ public class DataGenerationService(ILogger<DataGenerationService> logger) : IDat
                     deal.Amount,
                     deal.CloseDate
                 );
-                contactCsvRows.Add(csvRow);
+                companyDealRows.Add(row);
             }
         }
 
-        return new GenerationResult(companyCsvRows, contactCsvRows);
+        foreach (var contact in contacts)
+        {
+            var deals = manager.GetDealsForContact(contact.Id);
+            
+            foreach (var deal in deals)
+            {
+                var row = new CsvContactDeal(
+                    contact.Email,
+                    deal.Stage,
+                    deal.Pipeline,
+                    deal.Name,
+                    deal.Description,
+                    deal.Amount,
+                    deal.CloseDate
+                );
+                contactDealRows.Add(row);
+            }
+        }
+
+        return new GenerationResult(companyContactRows, companyDealRows, contactDealRows);
     }
 
     private void LogStatistics(AssociationManager manager, string mode)

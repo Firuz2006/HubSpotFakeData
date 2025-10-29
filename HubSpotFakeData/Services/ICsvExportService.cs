@@ -2,12 +2,9 @@
 
 namespace HubSpotFakeData.Services;
 
-/// <summary>
-/// Service for exporting data to CSV files
-/// </summary>
 public interface ICsvExportService
 {
-    Task<string> ExportCompaniesToCsvAsync(List<CsvCompany> rows, string timestamp);
-
-    Task<string> ExportContactsToCsvAsync(List<CsvContact> rows, string timestamp);
+    Task<string> ExportCompanyContactsToCsvAsync(List<CsvCompanyContact> rows, string timestamp);
+    Task<string> ExportCompanyDealsToCsvAsync(List<CsvCompanyDeal> rows, string timestamp);
+    Task<string> ExportContactDealsToCsvAsync(List<CsvContactDeal> rows, string timestamp);
 }

@@ -1,8 +1,12 @@
 ﻿namespace HubSpotFakeData.Models;
 
-public class GenerationResult(List<CsvCompany> companies, List<CsvContact> contacts)
+public class GenerationResult(
+    List<CsvCompanyContact> companyContacts,
+    List<CsvCompanyDeal> companyDeals,
+    List<CsvContactDeal> contactDeals)
 {
-    public List<CsvCompany> Companies { get; } = companies;
-    public List<CsvContact> Contacts { get; } = contacts;
+    public List<CsvCompanyContact> CompanyContacts { get; } = companyContacts;
+    public List<CsvCompanyDeal> CompanyDeals { get; } = companyDeals;
+    public List<CsvContactDeal> ContactDeals { get; } = contactDeals;
 }
 
