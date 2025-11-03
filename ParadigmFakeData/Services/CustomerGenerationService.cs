@@ -1,10 +1,14 @@
 using Bogus;
 using Microsoft.Extensions.Logging;
+using ParadigmFakeData.Models;
 using ParadigmFakeData.Models.Customer;
 
 namespace ParadigmFakeData.Services;
 
-public class CustomerGenerationService(ILogger<CustomerGenerationService> logger, IFileService fileService)
+public class CustomerGenerationService(
+    ILogger<CustomerGenerationService> logger, 
+    IFileService fileService,
+    GenerationSettings settings)
     : ICustomerGenerationService
 {
     private readonly HashSet<string> _usedEmails = new();
@@ -16,9 +20,9 @@ public class CustomerGenerationService(ILogger<CustomerGenerationService> logger
     {
         logger.LogInformation("Starting customer generation...");
 
-        var companies = GenerateCompanies(300);
-        var customers = GenerateCustomers(300);
-        var companyCustomers = GenerateCompanyCustomers(300);
+        var companies = GenerateCompanies(settings.CompanyCount);
+        var customers = GenerateCustomers(settings.CustomerCount);
+        var companyCustomers = GenerateCompanyCustomers(settings.CompanyCustomerCount);
 
         var allCustomers = new List<BaseCustomer>();
         allCustomers.AddRange(companies);

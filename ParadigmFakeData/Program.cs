@@ -1,5 +1,7 @@
-﻿using Microsoft.Extensions.DependencyInjection;
+﻿using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using ParadigmFakeData.Models;
 using ParadigmFakeData.Services;
 
 namespace ParadigmFakeData;
@@ -82,6 +84,16 @@ class Program
 
     private static void ConfigureServices(ServiceCollection services)
     {
+        var configuration = new ConfigurationBuilder()
+            .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
+            .Build();
+
+        services.AddSingleton<IConfiguration>(_ => configuration);
+
+        var generationSettings = new GenerationSettings();
+        configuration.GetSection("GenerationSettings").Bind(generationSettings);
+        services.AddSingleton(generationSettings);
+
         services.AddLogging(builder =>
         {
             builder.AddConsole();
