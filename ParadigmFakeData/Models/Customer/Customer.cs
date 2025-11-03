@@ -2,7 +2,7 @@
 
 namespace ParadigmFakeData.Models.Customer;
 
-public class Customer
+public class Customer : BaseCustomer
 {
     [JsonPropertyName("strFirstName")]
     public string FirstName { get; set; }
