@@ -12,7 +12,8 @@ public class FileService(ILogger<FileService> logger) : IFileService
             var options = new JsonSerializerOptions
             {
                 WriteIndented = true,
-                PropertyNamingPolicy = null
+                PropertyNamingPolicy = null,
+                DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.Never
             };
 
             var json = JsonSerializer.Serialize(data, options);
@@ -37,7 +38,9 @@ public class FileService(ILogger<FileService> logger) : IFileService
             var json = await File.ReadAllTextAsync(filePath);
             var options = new JsonSerializerOptions
             {
-                PropertyNamingPolicy = null
+                PropertyNamingPolicy = null,
+                DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.Never,
+                IncludeFields = true
             };
 
             var data = JsonSerializer.Deserialize<T>(json, options);
