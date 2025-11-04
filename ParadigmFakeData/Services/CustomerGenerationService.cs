@@ -1,7 +1,6 @@
 using Bogus;
 using Microsoft.Extensions.Logging;
 using ParadigmFakeData.Models;
-using ParadigmFakeData.Models.Customer;
 
 namespace ParadigmFakeData.Services;
 
@@ -24,7 +23,7 @@ public class CustomerGenerationService(
         var customers = GenerateCustomers(settings.CustomerCount);
         var companyCustomers = GenerateCompanyCustomers(settings.CompanyCustomerCount);
 
-        var allCustomers = new List<BaseCustomer>();
+        var allCustomers = new List<Customer>();
         allCustomers.AddRange(companies);
         allCustomers.AddRange(customers);
         allCustomers.AddRange(companyCustomers);
@@ -38,9 +37,9 @@ public class CustomerGenerationService(
         return filePath;
     }
 
-    private List<Company> GenerateCompanies(int count)
+    private List<Customer> GenerateCompanies(int count)
     {
-        var faker = new Faker<Company>()
+        var faker = new Faker<Customer>()
             .RuleFor(c => c.CompanyName, f => GenerateUniqueCompanyName(f))
             .RuleFor(c => c.WebsiteUrl, f => GenerateUniqueWebsite(f));
 
@@ -58,9 +57,9 @@ public class CustomerGenerationService(
         return faker.Generate(count);
     }
 
-    private List<CompanyCustomer> GenerateCompanyCustomers(int count)
+    private List<Customer> GenerateCompanyCustomers(int count)
     {
-        var faker = new Faker<CompanyCustomer>()
+        var faker = new Faker<Customer>()
             .RuleFor(c => c.CompanyName, f => GenerateUniqueCompanyName(f))
             .RuleFor(c => c.WebsiteUrl, f => GenerateUniqueWebsite(f))
             .RuleFor(c => c.FirstName, f => f.Name.FirstName())
@@ -87,7 +86,7 @@ public class CustomerGenerationService(
         string phone;
         do
         {
-            phone = f.Phone.PhoneNumber();
+            phone = f.Phone.PhoneNumber("###-###-####");
         } while (!_usedPhones.Add(phone));
 
         return phone;

@@ -12,10 +12,10 @@ class Program
     {
         var services = new ServiceCollection();
         ConfigureServices(services);
-        
+
         var serviceProvider = services.BuildServiceProvider();
         var logger = serviceProvider.GetRequiredService<ILogger<Program>>();
-        
+
         try
         {
             Console.ForegroundColor = ConsoleColor.Cyan;
@@ -84,7 +84,7 @@ class Program
 
     private static void ConfigureServices(ServiceCollection services)
     {
-        var configuration = new ConfigurationBuilder()
+        var configuration = new ConfigurationBuilder().AddUserSecrets<Program>()
             .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
             .Build();
 
@@ -100,11 +100,15 @@ class Program
             builder.SetMinimumLevel(LogLevel.Information);
         });
 
-        services.AddHttpClient<IParadigmApiService, ParadigmApiService>();
-        
+        services.AddHttpClient<IParadigmApiService, ParadigmApiService>(client =>
+        {
+            client.DefaultRequestHeaders.Add("x-api-key", generationSettings.ApiKey);
+        });
+
         services.AddSingleton<IFileService, FileService>();
         services.AddSingleton<ICustomerGenerationService, CustomerGenerationService>();
         services.AddSingleton<ICustomerContactGenerationService, CustomerContactGenerationService>();
+        services.AddSingleton<IOpportunityGenerationService, OpportunityGenerationService>();
         services.AddSingleton<IWorkflowOrchestrator, WorkflowOrchestrator>();
     }
 }

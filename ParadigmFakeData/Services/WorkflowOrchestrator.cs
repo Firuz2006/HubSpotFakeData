@@ -1,5 +1,5 @@
 using Microsoft.Extensions.Logging;
-using ParadigmFakeData.Models.Customer;
+using ParadigmFakeData.Models;
 
 namespace ParadigmFakeData.Services;
 
@@ -8,13 +8,15 @@ public class WorkflowOrchestrator(
     IFileService fileService,
     ICustomerGenerationService customerGenerationService,
     ICustomerContactGenerationService customerContactGenerationService,
+    IOpportunityGenerationService opportunityGenerationService,
     IParadigmApiService paradigmApiService) : IWorkflowOrchestrator
 {
     public async Task RunWorkflowAsync()
     {
         var outputPath = fileService.CreateOutputDirectory();
         logger.LogInformation("Starting workflow in directory: {Path}", outputPath);
-
+        await GenerateAndPostOpportunitiesStep(outputPath);
+        return;
         // Step 1: Generate customers
         var customersJsonPath = await GenerateCustomersStep(outputPath);
         
@@ -26,6 +28,9 @@ public class WorkflowOrchestrator(
         
         // Step 4: Post customer contacts to Paradigm
         await PostContactsStep(contactsJsonPath);
+        
+        // Step 5: Generate and post opportunities
+       
         
         logger.LogInformation("Workflow completed successfully!");
     }
@@ -60,7 +65,7 @@ public class WorkflowOrchestrator(
     {
         logger.LogInformation("=== STEP 2: POST CUSTOMERS TO PARADIGM ===");
         
-        var customers = await fileService.ReadFromJsonAsync<List<BaseCustomer>>(customersJsonPath);
+        var customers = await fileService.ReadFromJsonAsync<List<Customer>>(customersJsonPath);
         if (customers == null)
         {
             throw new InvalidOperationException("Failed to read customers");
@@ -131,12 +136,27 @@ public class WorkflowOrchestrator(
         Console.WriteLine();
     }
 
+    private async Task GenerateAndPostOpportunitiesStep(string outputPath)
+    {
+        logger.LogInformation("=== STEP 5: GENERATE AND POST OPPORTUNITIES ===");
+        
+        var opportunitiesJsonPath = await opportunityGenerationService.GenerateAndPostOpportunitiesAsync(outputPath);
+        
+        Console.WriteLine();
+        Console.ForegroundColor = ConsoleColor.Green;
+        Console.WriteLine("✓ Opportunities generated and posted successfully!");
+        var displayPath = opportunitiesJsonPath.Replace("\\", "/");
+        Console.WriteLine($"📄 File: file:///{displayPath}");
+        Console.ResetColor();
+        Console.WriteLine();
+    }
+
     public async Task DeleteCustomersAsync(string jsonPath)
     {
         logger.LogInformation("=== DELETE CUSTOMERS ===");
         logger.LogInformation("Reading customers from {Path}", jsonPath);
         
-        var customers = await fileService.ReadFromJsonAsync<List<BaseCustomer>>(jsonPath);
+        var customers = await fileService.ReadFromJsonAsync<List<Customer>>(jsonPath);
         if (customers == null || customers.Count == 0)
         {
             logger.LogError("No customers found in {Path}", jsonPath);

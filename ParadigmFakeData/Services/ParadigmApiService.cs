@@ -1,7 +1,6 @@
 using System.Net.Http.Json;
 using Microsoft.Extensions.Logging;
 using ParadigmFakeData.Models;
-using ParadigmFakeData.Models.Customer;
 
 namespace ParadigmFakeData.Services;
 
@@ -9,7 +8,7 @@ public class ParadigmApiService(ILogger<ParadigmApiService> logger, HttpClient h
 {
     private const string BaseUrl = "http://192.168.1.130:5001/api";
 
-    public async Task<List<BaseCustomer>> BatchCreateCustomersAsync(List<BaseCustomer> customers)
+    public async Task<List<Customer>> BatchCreateCustomersAsync(List<Customer> customers)
     {
         logger.LogInformation("Sending {Count} customers to Paradigm API...", customers.Count);
         
@@ -18,7 +17,7 @@ public class ParadigmApiService(ILogger<ParadigmApiService> logger, HttpClient h
             var response = await httpClient.PostAsJsonAsync($"{BaseUrl}/Customer/batch-create", customers);
             response.EnsureSuccessStatusCode();
             
-            var result = await response.Content.ReadFromJsonAsync<List<BaseCustomer>>();
+            var result = await response.Content.ReadFromJsonAsync<List<Customer>>();
             
             if (result == null || result.Count == 0)
             {
@@ -73,6 +72,38 @@ public class ParadigmApiService(ILogger<ParadigmApiService> logger, HttpClient h
         }
     }
 
+    public async Task<List<Opportunity>> BatchCreateOpportunitiesAsync(List<Opportunity> opportunities)
+    {
+        logger.LogInformation("Sending {Count} opportunities to Paradigm API...", opportunities.Count);
+        
+        try
+        {
+            var response = await httpClient.PostAsJsonAsync($"{BaseUrl}/Opportunity/batch-create", opportunities);
+            response.EnsureSuccessStatusCode();
+            
+            var result = await response.Content.ReadFromJsonAsync<List<Opportunity>>();
+            
+            if (result == null)
+            {
+                logger.LogWarning("API returned empty response for opportunities");
+                return opportunities;
+            }
+            
+            logger.LogInformation("Successfully created {Count} opportunities in Paradigm", result.Count);
+            return result;
+        }
+        catch (HttpRequestException ex)
+        {
+            logger.LogError(ex, "HTTP request failed while creating opportunities");
+            throw;
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Failed to batch create opportunities");
+            throw;
+        }
+    }
+
     public async Task DeleteCustomerAsync(string customerId)
     {
         logger.LogInformation("Deleting customer {CustomerId} from Paradigm...", customerId);
@@ -96,4 +127,3 @@ public class ParadigmApiService(ILogger<ParadigmApiService> logger, HttpClient h
         }
     }
 }
-
