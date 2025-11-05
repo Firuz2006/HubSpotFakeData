@@ -66,4 +66,20 @@ public class FileService(ILogger<FileService> logger) : IFileService
 
         return outputPath;
     }
+
+    public async Task<string> SaveTextAsync(string content, string outputPath, string fileName)
+    {
+        try
+        {
+            var fullPath = Path.Combine(outputPath, fileName);
+            await File.WriteAllTextAsync(fullPath, content);
+            logger.LogInformation("Saved text to: {Path}", fullPath);
+            return fullPath;
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Failed to save text to {Path}", outputPath);
+            throw;
+        }
+    }
 }

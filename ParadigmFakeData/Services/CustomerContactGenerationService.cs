@@ -6,22 +6,14 @@ namespace ParadigmFakeData.Services;
 
 public class CustomerContactGenerationService(
     ILogger<CustomerContactGenerationService> logger,
-    IFileService fileService,
     DatabaseSettings databaseSettings) : ICustomerContactGenerationService
 {
-    private readonly HashSet<string> _usedEmails = new();
-    private readonly HashSet<string> _usedPhones = new();
+    private readonly HashSet<string> _usedEmails = [];
+    private readonly HashSet<string> _usedPhones = [];
 
-    public async Task<string> GenerateCustomerContactsAsync(string customersJsonPath, string outputPath)
+    public Task<List<CustomerContact>> GenerateCustomerContactsAsync(List<Customer> customers)
     {
-        logger.LogInformation("Starting customer contact generation from {Path}", customersJsonPath);
-
-        var customers = await fileService.ReadFromJsonAsync<List<Customer>>(customersJsonPath);
-        if (customers == null || customers.Count == 0)
-        {
-            logger.LogError("No customers found in {Path}", customersJsonPath);
-            throw new InvalidOperationException("No customers found");
-        }
+        logger.LogInformation("Starting customer contact generation");
 
         var eligibleCustomers = customers
             .Where(c => !string.IsNullOrEmpty(c.CustomerId) &&
@@ -42,12 +34,10 @@ public class CustomerContactGenerationService(
 
         var contacts = GenerateContacts(eligibleCustomers);
 
-        var filePath = await fileService.SaveToJsonAsync(contacts, outputPath, "customer_contacts.json");
-
         logger.LogInformation("Generated {Count} customer contacts for {CustomerCount} eligible customers",
             contacts.Count, eligibleCustomers.Count);
 
-        return filePath;
+        return Task.FromResult(contacts);
     }
 
     public Task<string> GetDeleteCustomerContactSqlQueryAsync(List<CustomerContact> customerContacts)

@@ -4,6 +4,6 @@ namespace ParadigmFakeData.Services;
 
 public interface ICustomerGenerationService
 {
-    Task<string> GenerateCustomersAsync(string outputPath);
+    Task<List<Customer>> GenerateCustomersAsync();
     Task<string> GetDeleteCustomersSqlQueryAsync(List<Customer> customers);
 }

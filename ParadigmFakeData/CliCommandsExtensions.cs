@@ -62,14 +62,12 @@ internal static class CliCommandsExtensions
     {
         var postCustomersCommand = new Command("post-customers", "Post customers from JSON file to Paradigm")
         {
-            new Argument<FileInfo>("customersJsonPath", "Path to the customers JSON file"),
-            new Argument<DirectoryInfo>("outputPath", "Directory to save the output")
+            new Argument<FileInfo>("customersJsonPath", "Path to the customers JSON file")
         };
 
-        postCustomersCommand.SetHandler(async (customersJsonPath, outputPath) =>
-                await service.PostCustomersAsync(customersJsonPath.FullName, outputPath.FullName),
-            postCustomersCommand.Arguments.Cast<Argument<FileInfo>>().First(),
-            postCustomersCommand.Arguments.Cast<Argument<DirectoryInfo>>().Skip(1).First());
+        postCustomersCommand.SetHandler(async (customersJsonPath) =>
+                await service.PostCustomersAsync(customersJsonPath.FullName),
+            postCustomersCommand.Arguments.Cast<Argument<FileInfo>>().First());
 
         rootCommand.AddCommand(postCustomersCommand);
         return rootCommand;
@@ -79,14 +77,12 @@ internal static class CliCommandsExtensions
     {
         var generateContactsCommand = new Command("generate-contacts", "Generate contacts and save to JSON file")
         {
-            new Argument<FileInfo>("customersJsonPath", "Path to the customers JSON file"),
-            new Argument<DirectoryInfo>("outputPath", "Directory to save the generated contacts JSON file")
+            new Argument<FileInfo>("customersJsonPath", "Path to the customers JSON file")
         };
 
-        generateContactsCommand.SetHandler(async (customersJsonPath, outputPath) =>
-                await service.GenerateCustomerContactsAsync(customersJsonPath.FullName, outputPath.FullName),
-            generateContactsCommand.Arguments.Cast<Argument<FileInfo>>().First(),
-            generateContactsCommand.Arguments.Cast<Argument<DirectoryInfo>>().Skip(1).First());
+        generateContactsCommand.SetHandler(async customersJsonPath =>
+                await service.GenerateCustomerContactsAsync(customersJsonPath.FullName),
+            generateContactsCommand.Arguments.Cast<Argument<FileInfo>>().First());
 
         rootCommand.AddCommand(generateContactsCommand);
         return rootCommand;
@@ -113,14 +109,12 @@ internal static class CliCommandsExtensions
         var generateAndPostOpportunitiesCommand =
             new Command("generate-post-opportunities", "Generate and post opportunities to Paradigm")
             {
-                new Argument<FileInfo>("customerJsonPath", "Path to the customers JSON file"),
-                new Argument<DirectoryInfo>("outputPath", "Directory to save the output")
+                new Argument<FileInfo>("customerJsonPath", "Path to the customers JSON file")
             };
 
-        generateAndPostOpportunitiesCommand.SetHandler(async (customerJsonPath, outputPath) =>
-                await service.GenerateOpportunitiesAsync(customerJsonPath.FullName, outputPath.FullName),
-            generateAndPostOpportunitiesCommand.Arguments.Cast<Argument<FileInfo>>().First(),
-            generateAndPostOpportunitiesCommand.Arguments.Cast<Argument<DirectoryInfo>>().Skip(1).First());
+        generateAndPostOpportunitiesCommand.SetHandler(async customerJsonPath =>
+                await service.GenerateOpportunitiesAsync(customerJsonPath.FullName),
+            generateAndPostOpportunitiesCommand.Arguments.Cast<Argument<FileInfo>>().First());
 
         rootCommand.AddCommand(generateAndPostOpportunitiesCommand);
         return rootCommand;

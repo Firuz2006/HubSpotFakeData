@@ -67,10 +67,11 @@ internal class Program
 
         var generationSettings = new GenerationSettings();
         configuration.GetSection("GenerationSettings").Bind(generationSettings);
+        services.AddSingleton(generationSettings);
 
         var databaseSettings = new DatabaseSettings();
         configuration.GetSection("DatabaseSettings").Bind(databaseSettings);
-        services.AddSingleton(generationSettings);
+        services.AddSingleton(databaseSettings);
 
         services.AddLogging(builder =>
         {

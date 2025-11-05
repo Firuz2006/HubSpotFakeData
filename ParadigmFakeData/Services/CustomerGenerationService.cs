@@ -6,7 +6,6 @@ namespace ParadigmFakeData.Services;
 
 public class CustomerGenerationService(
     ILogger<CustomerGenerationService> logger,
-    IFileService fileService,
     GenerationSettings settings,
     DatabaseSettings databaseSettings)
     : ICustomerGenerationService
@@ -16,7 +15,7 @@ public class CustomerGenerationService(
     private readonly HashSet<string> _usedPhones = new();
     private readonly HashSet<string> _usedWebsites = new();
 
-    public async Task<string> GenerateCustomersAsync(string outputPath)
+    public Task<List<Customer>> GenerateCustomersAsync()
     {
         logger.LogInformation("Starting customer generation...");
 
@@ -29,13 +28,11 @@ public class CustomerGenerationService(
         allCustomers.AddRange(customers);
         allCustomers.AddRange(companyCustomers);
 
-        var filePath = await fileService.SaveToJsonAsync(allCustomers, outputPath, "customers.json");
-
         logger.LogInformation(
             "Generated {Total} customers: {Companies} companies, {Customers} customers, {CompanyCustomers} company-customers",
             allCustomers.Count, companies.Count, customers.Count, companyCustomers.Count);
 
-        return filePath;
+        return Task.FromResult(allCustomers);
     }
 
     public Task<string> GetDeleteCustomersSqlQueryAsync(List<Customer> customers)

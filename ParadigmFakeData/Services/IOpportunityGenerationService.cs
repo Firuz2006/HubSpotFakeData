@@ -4,6 +4,6 @@ namespace ParadigmFakeData.Services;
 
 public interface IOpportunityGenerationService
 {
-    Task<string> GenerateOpportunitiesAsync(List<Customer> customers, string outputPath);
+    Task<List<Opportunity>> GenerateOpportunitiesAsync(List<Customer> customers);
     Task<string> GetDeleteOpportunitiesSqlQueryAsync(List<Opportunity> opportunities);
 }

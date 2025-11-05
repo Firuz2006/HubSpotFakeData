@@ -4,7 +4,7 @@ using ParadigmFakeData.Models;
 
 namespace ParadigmFakeData.Services;
 
-public class ParadigmApiService(ILogger<ParadigmApiService> logger, HttpClient httpClient, IFileService fileService)
+public class ParadigmApiService(ILogger<ParadigmApiService> logger, HttpClient httpClient)
     : IParadigmApiService
 {
     private const string BaseUrl = "http://192.168.1.130:5001/api";
@@ -41,25 +41,27 @@ public class ParadigmApiService(ILogger<ParadigmApiService> logger, HttpClient h
         }
     }
 
-    public async Task BatchCreateCustomerContactsAsync(string jsonPath)
+    public async Task<List<CustomerContact>> BatchCreateCustomerContactsAsync(List<CustomerContact> contacts)
     {
-        logger.LogInformation("Reading customer contacts from {Path}", jsonPath);
-
-        var contacts = await fileService.ReadFromJsonAsync<List<CustomerContact>>(jsonPath);
-        if (contacts == null || contacts.Count == 0)
-        {
-            logger.LogError("No customer contacts found in {Path}", jsonPath);
-            throw new InvalidOperationException("No customer contacts found");
-        }
-
         logger.LogInformation("Sending {Count} customer contacts to Paradigm API...", contacts.Count);
+
+        if (contacts == null || contacts.Count == 0) throw new InvalidOperationException("No customer contacts to post");
 
         try
         {
             var response = await httpClient.PostAsJsonAsync($"{BaseUrl}/CustomerContact/batch-create", contacts);
             response.EnsureSuccessStatusCode();
 
-            logger.LogInformation("Successfully created {Count} customer contacts in Paradigm", contacts.Count);
+            var result = await response.Content.ReadFromJsonAsync<List<CustomerContact>>();
+
+            if (result == null || result.Count == 0)
+            {
+                logger.LogWarning("API returned empty response for customer contacts");
+                return contacts;
+            }
+
+            logger.LogInformation("Successfully created {Count} customer contacts in Paradigm", result.Count);
+            return result;
         }
         catch (HttpRequestException ex)
         {

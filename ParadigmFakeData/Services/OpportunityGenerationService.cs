@@ -6,12 +6,10 @@ namespace ParadigmFakeData.Services;
 
 public class OpportunityGenerationService(
     ILogger<OpportunityGenerationService> logger,
-    IFileService fileService,
-    IParadigmApiService apiService,
     GenerationSettings settings,
     DatabaseSettings databaseSettings) : IOpportunityGenerationService
 {
-    public async Task<string> GenerateOpportunitiesAsync(List<Customer> customers, string outputPath)
+    public Task<List<Opportunity>> GenerateOpportunitiesAsync(List<Customer> customers)
     {
         logger.LogInformation("Starting opportunity generation...");
 
@@ -23,20 +21,14 @@ public class OpportunityGenerationService(
         if (customerIds.Count == 0)
         {
             logger.LogWarning("No customer IDs found. Cannot generate opportunities.");
-            return string.Empty;
+            return Task.FromResult(new List<Opportunity>());
         }
 
         var opportunities = GenerateOpportunities(settings.OpportunityCount, customerIds);
 
-        logger.LogInformation("Generated {Count} opportunities, posting to API...", opportunities.Count);
+        logger.LogInformation("Generated {Count} opportunities", opportunities.Count);
 
-        await apiService.BatchCreateOpportunitiesAsync(opportunities);
-
-        var filePath = await fileService.SaveToJsonAsync(opportunities, outputPath, "opportunities.json");
-
-        logger.LogInformation("Posted {Count} opportunities and saved to {Path}", opportunities.Count, filePath);
-
-        return filePath;
+        return Task.FromResult(opportunities);
     }
 
     public Task<string> GetDeleteOpportunitiesSqlQueryAsync(List<Opportunity> opportunities)

@@ -4,6 +4,6 @@ namespace ParadigmFakeData.Services;
 
 public interface ICustomerContactGenerationService
 {
-    Task<string> GenerateCustomerContactsAsync(string customersJsonPath, string outputPath);
+    Task<List<CustomerContact>> GenerateCustomerContactsAsync(List<Customer> customers);
     Task<string> GetDeleteCustomerContactSqlQueryAsync(List<CustomerContact> customerContacts);
 }
