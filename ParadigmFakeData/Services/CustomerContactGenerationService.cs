@@ -60,9 +60,7 @@ public class CustomerContactGenerationService(
             .ToList();
 
         if (contactIds.Count == 0)
-        {
             throw new InvalidOperationException("No customer contact IDs found. Cannot generate delete query.");
-        }
 
         var sqlQuery =
             $"DELETE FROM {databaseSettings.CustomerContactTableName} WHERE {databaseSettings.CustomerContactIdColName} IN ({string.Join(", ", contactIds)});";
@@ -94,10 +92,7 @@ public class CustomerContactGenerationService(
                 var contactCount = random.Next(2, 5);
                 logger.LogDebug("Customer {CustomerId} will have {Count} contacts", customer.CustomerId, contactCount);
 
-                for (int i = 0; i < contactCount; i++)
-                {
-                    contacts.Add(GenerateContact(customer.CustomerId!));
-                }
+                for (var i = 0; i < contactCount; i++) contacts.Add(GenerateContact(customer.CustomerId!));
             }
             else
             {

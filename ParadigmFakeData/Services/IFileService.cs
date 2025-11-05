@@ -6,5 +6,3 @@ public interface IFileService
     Task<T?> ReadFromJsonAsync<T>(string filePath);
     string CreateOutputDirectory();
 }
-
-

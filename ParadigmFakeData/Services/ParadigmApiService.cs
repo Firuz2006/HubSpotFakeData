@@ -4,27 +4,28 @@ using ParadigmFakeData.Models;
 
 namespace ParadigmFakeData.Services;
 
-public class ParadigmApiService(ILogger<ParadigmApiService> logger, HttpClient httpClient, IFileService fileService) : IParadigmApiService
+public class ParadigmApiService(ILogger<ParadigmApiService> logger, HttpClient httpClient, IFileService fileService)
+    : IParadigmApiService
 {
     private const string BaseUrl = "http://192.168.1.130:5001/api";
 
     public async Task<List<Customer>> BatchCreateCustomersAsync(List<Customer> customers)
     {
         logger.LogInformation("Sending {Count} customers to Paradigm API...", customers.Count);
-        
+
         try
         {
             var response = await httpClient.PostAsJsonAsync($"{BaseUrl}/Customer/batch-create", customers);
             response.EnsureSuccessStatusCode();
-            
+
             var result = await response.Content.ReadFromJsonAsync<List<Customer>>();
-            
+
             if (result == null || result.Count == 0)
             {
                 logger.LogError("API returned empty response");
                 throw new InvalidOperationException("API returned empty response");
             }
-            
+
             logger.LogInformation("Successfully created {Count} customers in Paradigm", result.Count);
             return result;
         }
@@ -43,7 +44,7 @@ public class ParadigmApiService(ILogger<ParadigmApiService> logger, HttpClient h
     public async Task BatchCreateCustomerContactsAsync(string jsonPath)
     {
         logger.LogInformation("Reading customer contacts from {Path}", jsonPath);
-        
+
         var contacts = await fileService.ReadFromJsonAsync<List<CustomerContact>>(jsonPath);
         if (contacts == null || contacts.Count == 0)
         {
@@ -52,12 +53,12 @@ public class ParadigmApiService(ILogger<ParadigmApiService> logger, HttpClient h
         }
 
         logger.LogInformation("Sending {Count} customer contacts to Paradigm API...", contacts.Count);
-        
+
         try
         {
             var response = await httpClient.PostAsJsonAsync($"{BaseUrl}/CustomerContact/batch-create", contacts);
             response.EnsureSuccessStatusCode();
-            
+
             logger.LogInformation("Successfully created {Count} customer contacts in Paradigm", contacts.Count);
         }
         catch (HttpRequestException ex)
@@ -75,20 +76,20 @@ public class ParadigmApiService(ILogger<ParadigmApiService> logger, HttpClient h
     public async Task<List<Opportunity>> BatchCreateOpportunitiesAsync(List<Opportunity> opportunities)
     {
         logger.LogInformation("Sending {Count} opportunities to Paradigm API...", opportunities.Count);
-        
+
         try
         {
             var response = await httpClient.PostAsJsonAsync($"{BaseUrl}/Opportunity/batch-create", opportunities);
             response.EnsureSuccessStatusCode();
-            
+
             var result = await response.Content.ReadFromJsonAsync<List<Opportunity>>();
-            
+
             if (result == null)
             {
                 logger.LogWarning("API returned empty response for opportunities");
                 return opportunities;
             }
-            
+
             logger.LogInformation("Successfully created {Count} opportunities in Paradigm", result.Count);
             return result;
         }
@@ -107,12 +108,12 @@ public class ParadigmApiService(ILogger<ParadigmApiService> logger, HttpClient h
     public async Task DeleteCustomerAsync(string customerId)
     {
         logger.LogInformation("Deleting customer {CustomerId} from Paradigm...", customerId);
-        
+
         try
         {
             var response = await httpClient.DeleteAsync($"{BaseUrl}/CustomerContact/{customerId}");
             response.EnsureSuccessStatusCode();
-            
+
             logger.LogInformation("Successfully deleted customer {CustomerId}", customerId);
         }
         catch (HttpRequestException ex)

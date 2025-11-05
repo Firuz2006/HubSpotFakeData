@@ -1,4 +1,5 @@
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using Microsoft.Extensions.Logging;
 
 namespace ParadigmFakeData.Services;
@@ -13,7 +14,7 @@ public class FileService(ILogger<FileService> logger) : IFileService
             {
                 WriteIndented = true,
                 PropertyNamingPolicy = null,
-                DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.Never
+                DefaultIgnoreCondition = JsonIgnoreCondition.Never
             };
 
             var json = JsonSerializer.Serialize(data, options);
@@ -39,7 +40,7 @@ public class FileService(ILogger<FileService> logger) : IFileService
             var options = new JsonSerializerOptions
             {
                 PropertyNamingPolicy = null,
-                DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.Never,
+                DefaultIgnoreCondition = JsonIgnoreCondition.Never,
                 IncludeFields = true
             };
 

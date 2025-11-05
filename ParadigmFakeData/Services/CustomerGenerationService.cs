@@ -11,9 +11,9 @@ public class CustomerGenerationService(
     DatabaseSettings databaseSettings)
     : ICustomerGenerationService
 {
+    private readonly HashSet<string> _usedCompanyNames = new();
     private readonly HashSet<string> _usedEmails = new();
     private readonly HashSet<string> _usedPhones = new();
-    private readonly HashSet<string> _usedCompanyNames = new();
     private readonly HashSet<string> _usedWebsites = new();
 
     public async Task<string> GenerateCustomersAsync(string outputPath)

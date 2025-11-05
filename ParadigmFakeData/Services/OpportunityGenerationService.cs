@@ -49,9 +49,7 @@ public class OpportunityGenerationService(
             .ToList();
 
         if (contactIds.Count == 0)
-        {
             throw new InvalidOperationException("No customer contact IDs found. Cannot generate delete query.");
-        }
 
         var sqlQuery =
             $"DELETE FROM {databaseSettings.OpportunitiesTableName} WHERE {databaseSettings.OpportunitiesNameColName} IN ({string.Join(", ", contactIds)});";

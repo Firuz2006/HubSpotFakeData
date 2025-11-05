@@ -60,7 +60,7 @@ internal class Program
     private static void ConfigureServices(ServiceCollection services)
     {
         var configuration = new ConfigurationBuilder().AddUserSecrets<Program>()
-            .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
+            .AddJsonFile("appsettings.json", false, true)
             .Build();
 
         services.AddSingleton<IConfiguration>(_ => configuration);
@@ -69,7 +69,7 @@ internal class Program
         configuration.GetSection("GenerationSettings").Bind(generationSettings);
 
         var databaseSettings = new DatabaseSettings();
-        configuration.GetSection("DatabaseSettings").Bind(generationSettings);
+        configuration.GetSection("DatabaseSettings").Bind(databaseSettings);
         services.AddSingleton(generationSettings);
 
         services.AddLogging(builder =>

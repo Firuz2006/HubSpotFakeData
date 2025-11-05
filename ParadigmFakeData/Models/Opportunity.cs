@@ -37,4 +37,3 @@ public class Opportunity
     [JsonPropertyName("requestRemoveLock")]
     public bool RequestRemoveLock { get; set; } = true;
 }
-

@@ -1,10 +1,12 @@
 # Quick Start Guide - Paradigm Fake Data Generator
 
 ## Prerequisites
+
 - .NET 9.0 SDK installed
 - Access to Paradigm API at `http://192.168.1.130:5001`
 
 ## First Time Setup
+
 ```cmd
 cd C:\Users\user\RiderProjects\HubSpotFakeData\ParadigmFakeData
 dotnet restore
@@ -14,6 +16,7 @@ dotnet build
 ## Running the Application
 
 ### Generate and Post Data (Interactive Workflow)
+
 ```cmd
 dotnet run
 ```
@@ -21,21 +24,26 @@ dotnet run
 You'll be guided through 4 steps with prompts at each stage:
 
 **Step 1:** Generate Customers
+
 - ✓ Output: `output_TIMESTAMP/customers.json` (900 customers)
 - ❓ Prompt: Review and approve to post to Paradigm
 
 **Step 2:** Post to Paradigm & Update IDs
+
 - ✓ Output: `output_TIMESTAMP/customers_updated.json` (with API IDs)
 - ❓ Prompt: Approve to generate contacts
 
 **Step 3:** Generate Customer Contacts
+
 - ✓ Output: `output_TIMESTAMP/customer_contacts.json`
 - ❓ Prompt: Approve to post contacts
 
 **Step 4:** Post Contacts to Paradigm
+
 - ✓ Complete!
 
 ### Delete Customers
+
 ```cmd
 dotnet run --delete "output_20251103_143022\customers_updated.json"
 ```
@@ -71,6 +79,7 @@ Do you want to continue and create customer contacts? (y/n): y
 All files saved to timestamped directory: `output_YYYYMMDD_HHMMSS/`
 
 ### customers.json
+
 ```json
 [
   {
@@ -89,6 +98,7 @@ All files saved to timestamped directory: `output_YYYYMMDD_HHMMSS/`
 ```
 
 ### customers_updated.json
+
 ```json
 [
   {
@@ -100,6 +110,7 @@ All files saved to timestamped directory: `output_YYYYMMDD_HHMMSS/`
 ```
 
 ### customer_contacts.json
+
 ```json
 [
   {
@@ -123,10 +134,12 @@ All files saved to timestamped directory: `output_YYYYMMDD_HHMMSS/`
 ## Troubleshooting
 
 **Cannot connect to API**
+
 - Verify Paradigm API is running at `http://192.168.1.130:5001`
 - Check network connectivity
 
 **Build errors**
+
 ```cmd
 dotnet clean
 dotnet restore
@@ -134,6 +147,7 @@ dotnet build
 ```
 
 **No output directory created**
+
 - Check write permissions in project directory
 - Verify disk space available
 

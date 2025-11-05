@@ -7,12 +7,19 @@ internal static class CliCommandsExtensions
 {
     internal static RootCommand RegisterCommands(IWorkflowOrchestrator service)
     {
-        return CreateRootCommand().RegisterDeleteCustomersCommand(service)
+        return CreateRootCommand()
+            // Customer
             .RegisterGenerateCustomersStep(service)
             .RegisterPostCustomersStep(service)
+            .RegisterDeleteCustomersCommand(service)
+            // Contact
             .RegisterGenerateContactsStep(service)
             .RegisterPostContactsStep(service)
-            .RegisterGenerateAndPostOpportunitiesStep(service);
+            .RegisterDeleteCustomerContactsCommand(service)
+            // Opportunity
+            .RegisterGenerateAndPostOpportunitiesStep(service)
+            .RegisterPostOpportunitiesStep(service)
+            .RegisterDeleteOpportunitiesCommand(service);
     }
 
     private static RootCommand CreateRootCommand()
@@ -113,9 +120,60 @@ internal static class CliCommandsExtensions
         generateAndPostOpportunitiesCommand.SetHandler(async (customerJsonPath, outputPath) =>
                 await service.GenerateOpportunitiesAsync(customerJsonPath.FullName, outputPath.FullName),
             generateAndPostOpportunitiesCommand.Arguments.Cast<Argument<FileInfo>>().First(),
-            generateAndPostOpportunitiesCommand.Arguments.Cast<Argument<DirectoryInfo>>().First());
+            generateAndPostOpportunitiesCommand.Arguments.Cast<Argument<DirectoryInfo>>().Skip(1).First());
 
         rootCommand.AddCommand(generateAndPostOpportunitiesCommand);
+        return rootCommand;
+    }
+
+    private static RootCommand RegisterPostOpportunitiesStep(this RootCommand rootCommand,
+        IWorkflowOrchestrator service)
+    {
+        var postOpportunitiesCommand =
+            new Command("post-opportunities", "Post opportunities from JSON file to Paradigm")
+            {
+                new Argument<FileInfo>("opportunitiesJsonPath", "Path to the opportunities JSON file")
+            };
+
+        postOpportunitiesCommand.SetHandler(async opportunitiesJsonPath =>
+                await service.PostOpportunitiesAsync(opportunitiesJsonPath.FullName),
+            postOpportunitiesCommand.Arguments.Cast<Argument<FileInfo>>().First());
+
+        rootCommand.AddCommand(postOpportunitiesCommand);
+        return rootCommand;
+    }
+
+    private static RootCommand RegisterDeleteCustomerContactsCommand(this RootCommand rootCommand,
+        IWorkflowOrchestrator service)
+    {
+        var deleteContactsCommand = new Command("delete-customer-contacts",
+            "Generate SQL to delete customer contacts from Paradigm using a JSON file")
+        {
+            new Argument<FileInfo>("path", "Path to the customer contacts JSON file")
+        };
+
+        deleteContactsCommand.SetHandler(
+            async path => await service.GetDeleteCustomerContactsSqlQueryAsync(path.FullName),
+            deleteContactsCommand.Arguments.Cast<Argument<FileInfo>>().First());
+
+        rootCommand.AddCommand(deleteContactsCommand);
+        return rootCommand;
+    }
+
+    private static RootCommand RegisterDeleteOpportunitiesCommand(this RootCommand rootCommand,
+        IWorkflowOrchestrator service)
+    {
+        var deleteOpportunitiesCommand = new Command("delete-opportunities",
+            "Generate SQL to delete opportunities from Paradigm using a JSON file")
+        {
+            new Argument<FileInfo>("path", "Path to the opportunities JSON file")
+        };
+
+        deleteOpportunitiesCommand.SetHandler(
+            async path => await service.GetOpportunitiesDeleteSqlQueryAsync(path.FullName),
+            deleteOpportunitiesCommand.Arguments.Cast<Argument<FileInfo>>().First());
+
+        rootCommand.AddCommand(deleteOpportunitiesCommand);
         return rootCommand;
     }
 }
