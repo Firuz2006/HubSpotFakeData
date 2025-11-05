@@ -5,9 +5,10 @@ using ParadigmFakeData.Models;
 namespace ParadigmFakeData.Services;
 
 public class CustomerGenerationService(
-    ILogger<CustomerGenerationService> logger, 
+    ILogger<CustomerGenerationService> logger,
     IFileService fileService,
-    GenerationSettings settings)
+    GenerationSettings settings,
+    DatabaseSettings databaseSettings)
     : ICustomerGenerationService
 {
     private readonly HashSet<string> _usedEmails = new();
@@ -35,6 +36,29 @@ public class CustomerGenerationService(
             allCustomers.Count, companies.Count, customers.Count, companyCustomers.Count);
 
         return filePath;
+    }
+
+    public Task<string> GetDeleteCustomersSqlQueryAsync(List<Customer> customers)
+    {
+        logger.LogInformation("Generating SQL delete query for {Count} customers...", customers.Count);
+
+        var customerIds = customers
+            .Where(c => !string.IsNullOrEmpty(c.CustomerId))
+            .Select(c => $"'{c.CustomerId}'")
+            .ToList();
+
+        if (customerIds.Count == 0)
+        {
+            logger.LogWarning("No customer IDs found. Cannot generate delete query.");
+            return Task.FromResult(string.Empty);
+        }
+
+        var sqlQuery =
+            $"DELETE FROM {databaseSettings.CustomersTableName} WHERE {databaseSettings.CustomersIdColName} IN ({string.Join(", ", customerIds)});";
+
+        logger.LogInformation("Generated SQL delete query.");
+
+        return Task.FromResult(sqlQuery);
     }
 
     private List<Customer> GenerateCompanies(int count)

@@ -8,14 +8,18 @@ public class OpportunityGenerationService(
     ILogger<OpportunityGenerationService> logger,
     IFileService fileService,
     IParadigmApiService apiService,
-    GenerationSettings settings) : IOpportunityGenerationService
+    GenerationSettings settings,
+    DatabaseSettings databaseSettings) : IOpportunityGenerationService
 {
-    public async Task<string> GenerateAndPostOpportunitiesAsync(string outputPath)
+    public async Task<string> GenerateOpportunitiesAsync(List<Customer> customers, string outputPath)
     {
         logger.LogInformation("Starting opportunity generation...");
 
-        var customerIds = await LoadCustomerIdsAsync();
-        
+        var customerIds = customers
+            .Where(c => !string.IsNullOrEmpty(c.CustomerId))
+            .Select(c => c.CustomerId!)
+            .ToList();
+
         if (customerIds.Count == 0)
         {
             logger.LogWarning("No customer IDs found. Cannot generate opportunities.");
@@ -35,85 +39,26 @@ public class OpportunityGenerationService(
         return filePath;
     }
 
-    private async Task<List<string>> LoadCustomerIdsAsync()
+    public Task<string> GetDeleteOpportunitiesSqlQueryAsync(List<Opportunity> opportunities)
     {
-        try
+        logger.LogInformation("Generating SQL delete query for {Count} Opportunities...", opportunities.Count);
+
+        var contactIds = opportunities
+            .Where(c => !string.IsNullOrEmpty(c.Name))
+            .Select(c => $"'{c.Name}'")
+            .ToList();
+
+        if (contactIds.Count == 0)
         {
-            var allCustomerIds = new List<string>();
-            var customerJsonPaths = FindAllCustomersJson(settings.CustomerJsonPath);
-            
-            if (customerJsonPaths.Count == 0)
-            {
-                logger.LogWarning("No customers_updated.json files found in {Path}", settings.CustomerJsonPath);
-                return new List<string>();
-            }
-
-            foreach (var jsonPath in customerJsonPaths)
-            {
-                var customers = await fileService.ReadFromJsonAsync<List<Customer>>(jsonPath);
-                
-                if (customers == null || customers.Count == 0)
-                {
-                    logger.LogWarning("No customers loaded from {Path}", jsonPath);
-                    continue;
-                }
-
-                var customerIds = customers
-                    .Where(c => !string.IsNullOrEmpty(c.CustomerId))
-                    .Select(c => c.CustomerId!)
-                    .ToList();
-
-                logger.LogInformation("Loaded {Count} customer IDs from {Path}", customerIds.Count, jsonPath);
-                allCustomerIds.AddRange(customerIds);
-            }
-
-            logger.LogInformation("Loaded total {Count} customer IDs from {FileCount} files", allCustomerIds.Count, customerJsonPaths.Count);
-
-            return allCustomerIds;
-        }
-        catch (Exception ex)
-        {
-            logger.LogError(ex, "Failed to load customer IDs from {Path}", settings.CustomerJsonPath);
-            return new List<string>();
-        }
-    }
-
-    private List<string> FindAllCustomersJson(string basePath)
-    {
-        var customerFiles = new List<string>();
-        
-        if (!Directory.Exists(basePath))
-        {
-            logger.LogWarning("Directory does not exist: {Path}", basePath);
-            return customerFiles;
+            throw new InvalidOperationException("No customer contact IDs found. Cannot generate delete query.");
         }
 
-        var outputDirs = Directory.GetDirectories(basePath, "output_*");
+        var sqlQuery =
+            $"DELETE FROM {databaseSettings.OpportunitiesTableName} WHERE {databaseSettings.OpportunitiesNameColName} IN ({string.Join(", ", contactIds)});";
 
-        foreach (var dir in outputDirs)
-        {
-            var updatedPath = Path.Combine(dir, "customers_updated.json");
-            if (File.Exists(updatedPath))
-            {
-                logger.LogInformation("Found customers file: {Path}", updatedPath);
-                customerFiles.Add(updatedPath);
-                continue;
-            }
+        logger.LogInformation("Generated SQL delete query.");
 
-            var customersPath = Path.Combine(dir, "customers.json");
-            if (File.Exists(customersPath))
-            {
-                logger.LogInformation("Found customers file: {Path}", customersPath);
-                customerFiles.Add(customersPath);
-            }
-        }
-
-        if (customerFiles.Count == 0)
-        {
-            logger.LogWarning("No customers.json or customers_updated.json files found in {Path}", basePath);
-        }
-
-        return customerFiles;
+        return Task.FromResult(sqlQuery);
     }
 
     private List<Opportunity> GenerateOpportunities(int count, List<string> customerIds)
@@ -126,4 +71,3 @@ public class OpportunityGenerationService(
         return faker.Generate(count);
     }
 }
-

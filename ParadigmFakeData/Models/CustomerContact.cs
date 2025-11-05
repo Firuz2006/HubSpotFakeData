@@ -7,6 +7,10 @@ public class CustomerContact
     [JsonPropertyName("strCustomerID")]
     public required string CustomerId { get; set; }
 
+
+    [JsonPropertyName("strContactID")]
+    public string ContactId { get; set; } = "";
+
     [JsonPropertyName("strFirstName")]
     public string FirstName { get; set; } = "";
 

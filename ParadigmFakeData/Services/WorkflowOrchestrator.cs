@@ -11,36 +11,12 @@ public class WorkflowOrchestrator(
     IOpportunityGenerationService opportunityGenerationService,
     IParadigmApiService paradigmApiService) : IWorkflowOrchestrator
 {
-    public async Task RunWorkflowAsync()
+    public async Task<string> GenerateCustomersAsync(string outputPath)
     {
-        var outputPath = fileService.CreateOutputDirectory();
-        logger.LogInformation("Starting workflow in directory: {Path}", outputPath);
-        await GenerateAndPostOpportunitiesStep(outputPath);
-        return;
-        // Step 1: Generate customers
-        var customersJsonPath = await GenerateCustomersStep(outputPath);
-        
-        // Step 2: Post customers to Paradigm
-        var updatedCustomersPath = await PostCustomersStep(customersJsonPath, outputPath);
-        
-        // Step 3: Generate customer contacts
-        var contactsJsonPath = await GenerateContactsStep(updatedCustomersPath, outputPath);
-        
-        // Step 4: Post customer contacts to Paradigm
-        await PostContactsStep(contactsJsonPath);
-        
-        // Step 5: Generate and post opportunities
-       
-        
-        logger.LogInformation("Workflow completed successfully!");
-    }
+        logger.LogInformation("=== GENERATE CUSTOMERS ===");
 
-    private async Task<string> GenerateCustomersStep(string outputPath)
-    {
-        logger.LogInformation("=== STEP 1: GENERATE CUSTOMERS ===");
-        
         var customersJsonPath = await customerGenerationService.GenerateCustomersAsync(outputPath);
-        
+
         Console.WriteLine();
         Console.ForegroundColor = ConsoleColor.Green;
         Console.WriteLine("✓ Customers generated successfully!");
@@ -48,35 +24,23 @@ public class WorkflowOrchestrator(
         Console.WriteLine($"📄 File: file:///{displayPath}");
         Console.ResetColor();
         Console.WriteLine();
-        
-        Console.Write("Did you review it and can we post it to Paradigm? (y/n): ");
-        var response = Console.ReadLine()?.Trim().ToLower();
-        
-        if (response != "y")
-        {
-            logger.LogWarning("User declined to continue. Workflow stopped.");
-            throw new OperationCanceledException("User declined to continue");
-        }
-        
+
         return customersJsonPath;
     }
 
-    private async Task<string> PostCustomersStep(string customersJsonPath, string outputPath)
+    public async Task<string> PostCustomersAsync(string customersJsonPath, string outputPath)
     {
-        logger.LogInformation("=== STEP 2: POST CUSTOMERS TO PARADIGM ===");
-        
+        logger.LogInformation("=== POST CUSTOMERS TO PARADIGM ===");
+
         var customers = await fileService.ReadFromJsonAsync<List<Customer>>(customersJsonPath);
-        if (customers == null)
-        {
-            throw new InvalidOperationException("Failed to read customers");
-        }
+        if (customers == null) throw new InvalidOperationException("Failed to read customers");
 
         var updatedCustomers = await paradigmApiService.BatchCreateCustomersAsync(customers);
-        
+
         var updatedPath = await fileService.SaveToJsonAsync(updatedCustomers, outputPath, "customers_updated.json");
-        
+
         logger.LogInformation("Customers updated with IDs from Paradigm");
-        
+
         Console.WriteLine();
         Console.ForegroundColor = ConsoleColor.Green;
         Console.WriteLine("✓ Customers posted and updated successfully!");
@@ -84,25 +48,46 @@ public class WorkflowOrchestrator(
         Console.WriteLine($"📄 Updated file: file:///{displayPath}");
         Console.ResetColor();
         Console.WriteLine();
-        
-        Console.Write("Do you want to continue and create customer contacts? (y/n): ");
-        var response = Console.ReadLine()?.Trim().ToLower();
-        
-        if (response != "y")
-        {
-            logger.LogWarning("User declined to continue. Workflow stopped.");
-            throw new OperationCanceledException("User declined to continue");
-        }
-        
+
         return updatedPath;
     }
 
-    private async Task<string> GenerateContactsStep(string customersJsonPath, string outputPath)
+    public async Task GetDeleteCustomersSqlQueryAsync(string jsonPath)
     {
-        logger.LogInformation("=== STEP 3: GENERATE CUSTOMER CONTACTS ===");
-        
-        var contactsJsonPath = await customerContactGenerationService.GenerateCustomerContactsAsync(customersJsonPath, outputPath);
-        
+        logger.LogInformation("=== DELETE CUSTOMERS ===");
+        logger.LogInformation("Reading customers from {Path}", jsonPath);
+
+        var customers = await fileService.ReadFromJsonAsync<List<Customer>>(jsonPath);
+        if (customers == null || customers.Count == 0)
+        {
+            logger.LogError("No customers found in {Path}", jsonPath);
+            throw new InvalidOperationException("No customers found");
+        }
+
+        var deleteQuery = await customerGenerationService.GetDeleteCustomersSqlQueryAsync(customers);
+
+        var fileInfo = new FileInfo(jsonPath);
+        var directoryFullName =
+            fileInfo.Directory?.FullName ?? throw new InvalidOperationException("Invalid file path");
+
+        fileInfo = new FileInfo(Path.Combine(directoryFullName, "delete_customers.sql"));
+
+        await File.WriteAllTextAsync(fileInfo.FullName, deleteQuery);
+
+        Console.WriteLine("Delete customers SQL query generated successfully!");
+        var displayPath = fileInfo.Replace("\\", "/");
+        Console.WriteLine($"📄 File: file:///{displayPath}");
+        Console.ResetColor();
+        Console.WriteLine();
+    }
+
+    public async Task<string> GenerateCustomerContactsAsync(string customersJsonPath, string outputPath)
+    {
+        logger.LogInformation("=== GENERATE CUSTOMER CONTACTS ===");
+
+        var contactsJsonPath =
+            await customerContactGenerationService.GenerateCustomerContactsAsync(customersJsonPath, outputPath);
+
         Console.WriteLine();
         Console.ForegroundColor = ConsoleColor.Green;
         Console.WriteLine("✓ Customer contacts generated successfully!");
@@ -110,25 +95,16 @@ public class WorkflowOrchestrator(
         Console.WriteLine($"📄 File: file:///{displayPath}");
         Console.ResetColor();
         Console.WriteLine();
-        
-        Console.Write("Do you want to continue and post contacts to Paradigm? (y/n): ");
-        var response = Console.ReadLine()?.Trim().ToLower();
-        
-        if (response != "y")
-        {
-            logger.LogWarning("User declined to continue. Workflow stopped.");
-            throw new OperationCanceledException("User declined to continue");
-        }
-        
+
         return contactsJsonPath;
     }
 
-    private async Task PostContactsStep(string contactsJsonPath)
+    public async Task PostCustomerContactsAsync(string contactsJsonPath)
     {
-        logger.LogInformation("=== STEP 4: POST CUSTOMER CONTACTS TO PARADIGM ===");
-        
+        logger.LogInformation("=== POST CUSTOMER CONTACTS TO PARADIGM ===");
+
         await paradigmApiService.BatchCreateCustomerContactsAsync(contactsJsonPath);
-        
+
         Console.WriteLine();
         Console.ForegroundColor = ConsoleColor.Green;
         Console.WriteLine("✓ Customer contacts posted successfully!");
@@ -136,12 +112,44 @@ public class WorkflowOrchestrator(
         Console.WriteLine();
     }
 
-    private async Task GenerateAndPostOpportunitiesStep(string outputPath)
+    public async Task GetDeleteCustomerContactsSqlQueryAsync(string jsonPath)
     {
-        logger.LogInformation("=== STEP 5: GENERATE AND POST OPPORTUNITIES ===");
-        
-        var opportunitiesJsonPath = await opportunityGenerationService.GenerateAndPostOpportunitiesAsync(outputPath);
-        
+        logger.LogInformation("=== DELETE CUSTOMER_CONTACTS ===");
+        logger.LogInformation("Reading Contacts from {Path}", jsonPath);
+
+        var customerContacts = await fileService.ReadFromJsonAsync<List<CustomerContact>>(jsonPath);
+        if (customerContacts == null || customerContacts.Count == 0)
+        {
+            logger.LogError("No CustomerContacts found in {Path}", jsonPath);
+            throw new InvalidOperationException("No customers found");
+        }
+
+        var deleteQuery =
+            await customerContactGenerationService.GetDeleteCustomerContactSqlQueryAsync(customerContacts);
+
+        var fileInfo = new FileInfo(jsonPath);
+        var directoryFullName =
+            fileInfo.Directory?.FullName ?? throw new InvalidOperationException("Invalid file path");
+
+        fileInfo = new FileInfo(Path.Combine(directoryFullName, "delete_customers.sql"));
+
+        await File.WriteAllTextAsync(fileInfo.FullName, deleteQuery);
+
+        Console.WriteLine("Delete customers SQL query generated successfully!");
+        var displayPath = fileInfo.Replace("\\", "/");
+        Console.WriteLine($"📄 File: file:///{displayPath}");
+        Console.ResetColor();
+        Console.WriteLine();
+    }
+
+    public async Task GenerateOpportunitiesAsync(string customerJsonPath, string outputPath)
+    {
+        logger.LogInformation("=== GENERATE AND POST OPPORTUNITIES ===");
+        var customers = await fileService.ReadFromJsonAsync<List<Customer>>(customerJsonPath) ?? [];
+
+        var opportunitiesJsonPath =
+            await opportunityGenerationService.GenerateOpportunitiesAsync(customers, outputPath);
+
         Console.WriteLine();
         Console.ForegroundColor = ConsoleColor.Green;
         Console.WriteLine("✓ Opportunities generated and posted successfully!");
@@ -151,52 +159,50 @@ public class WorkflowOrchestrator(
         Console.WriteLine();
     }
 
-    public async Task DeleteCustomersAsync(string jsonPath)
+    public async Task PostOpportunitiesAsync(string opportunitiesJsonPath)
     {
-        logger.LogInformation("=== DELETE CUSTOMERS ===");
-        logger.LogInformation("Reading customers from {Path}", jsonPath);
-        
-        var customers = await fileService.ReadFromJsonAsync<List<Customer>>(jsonPath);
-        if (customers == null || customers.Count == 0)
+        logger.LogInformation("=== POST OPPORTUNITIES TO PARADIGM ===");
+
+        var opportunities = await fileService.ReadFromJsonAsync<List<Opportunity>>(opportunitiesJsonPath);
+        if (opportunities == null) throw new InvalidOperationException("Failed to read opportunities");
+
+        await paradigmApiService.BatchCreateOpportunitiesAsync(opportunities);
+
+        Console.WriteLine();
+        Console.ForegroundColor = ConsoleColor.Green;
+        Console.WriteLine("✓ Opportunities posted successfully!");
+        Console.ResetColor();
+        Console.WriteLine();
+    }
+
+
+    public async Task GetOpportunitiesDeleteSqlQueryAsync(string jsonPath)
+    {
+        logger.LogInformation("=== DELETE OPPORTUNITIES ===");
+        logger.LogInformation("Reading Contacts from {Path}", jsonPath);
+
+        var customerContacts = await fileService.ReadFromJsonAsync<List<Opportunity>>(jsonPath);
+        if (customerContacts == null || customerContacts.Count == 0)
         {
-            logger.LogError("No customers found in {Path}", jsonPath);
+            logger.LogError("No CustomerContacts found in {Path}", jsonPath);
             throw new InvalidOperationException("No customers found");
         }
 
-        var customersWithIds = customers.Where(c => !string.IsNullOrEmpty(c.CustomerId)).ToList();
-        logger.LogInformation("Found {Count} customers with IDs to delete", customersWithIds.Count);
+        var deleteQuery =
+            await opportunityGenerationService.GetDeleteOpportunitiesSqlQueryAsync(customerContacts);
 
-        var successCount = 0;
-        var failCount = 0;
+        var fileInfo = new FileInfo(jsonPath);
+        var directoryFullName =
+            fileInfo.Directory?.FullName ?? throw new InvalidOperationException("Invalid file path");
 
-        foreach (var customer in customersWithIds)
-        {
-            try
-            {
-                await paradigmApiService.DeleteCustomerAsync(customer.CustomerId!);
-                successCount++;
-            }
-            catch (Exception ex)
-            {
-                logger.LogError(ex, "Failed to delete customer {CustomerId}", customer.CustomerId);
-                failCount++;
-            }
-        }
+        fileInfo = new FileInfo(Path.Combine(directoryFullName, "delete_customers.sql"));
 
-        logger.LogInformation("Deletion complete: {Success} succeeded, {Failed} failed", successCount, failCount);
-        
-        Console.WriteLine();
-        Console.ForegroundColor = ConsoleColor.Green;
-        Console.WriteLine($"✓ Deleted {successCount} customers");
+        await File.WriteAllTextAsync(fileInfo.FullName, deleteQuery);
+
+        Console.WriteLine("Delete customers SQL query generated successfully!");
+        var displayPath = fileInfo.Replace("\\", "/");
+        Console.WriteLine($"📄 File: file:///{displayPath}");
         Console.ResetColor();
-        
-        if (failCount > 0)
-        {
-            Console.ForegroundColor = ConsoleColor.Red;
-            Console.WriteLine($"✗ Failed to delete {failCount} customers");
-            Console.ResetColor();
-        }
         Console.WriteLine();
     }
 }
-

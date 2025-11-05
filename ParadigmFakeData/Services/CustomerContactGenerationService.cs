@@ -6,7 +6,8 @@ namespace ParadigmFakeData.Services;
 
 public class CustomerContactGenerationService(
     ILogger<CustomerContactGenerationService> logger,
-    IFileService fileService) : ICustomerContactGenerationService
+    IFileService fileService,
+    DatabaseSettings databaseSettings) : ICustomerContactGenerationService
 {
     private readonly HashSet<string> _usedEmails = new();
     private readonly HashSet<string> _usedPhones = new();
@@ -25,12 +26,12 @@ public class CustomerContactGenerationService(
         var eligibleCustomers = customers
             .Where(c => !string.IsNullOrEmpty(c.CustomerId) &&
                         !(string.IsNullOrEmpty(c.CompanyName) &&
-                         string.IsNullOrEmpty(c.WebsiteUrl) &&
-                         !string.IsNullOrEmpty(c.FirstName) &&
-                         !string.IsNullOrEmpty(c.LastName) &&
-                         !string.IsNullOrEmpty(c.PrimaryEmail) &&
-                         !string.IsNullOrEmpty(c.PrimaryPhone)
-                        ))
+                          string.IsNullOrEmpty(c.WebsiteUrl) &&
+                          !string.IsNullOrEmpty(c.FirstName) &&
+                          !string.IsNullOrEmpty(c.LastName) &&
+                          !string.IsNullOrEmpty(c.PrimaryEmail) &&
+                          !string.IsNullOrEmpty(c.PrimaryPhone)
+                            ))
             .ToList();
 
         if (eligibleCustomers.Count == 0)
@@ -47,6 +48,28 @@ public class CustomerContactGenerationService(
             contacts.Count, eligibleCustomers.Count);
 
         return filePath;
+    }
+
+    public Task<string> GetDeleteCustomerContactSqlQueryAsync(List<CustomerContact> customerContacts)
+    {
+        logger.LogInformation("Generating SQL delete query for {Count} customer contacts...", customerContacts.Count);
+
+        var contactIds = customerContacts
+            .Where(c => !string.IsNullOrEmpty(c.ContactId))
+            .Select(c => $"'{c.ContactId}'")
+            .ToList();
+
+        if (contactIds.Count == 0)
+        {
+            throw new InvalidOperationException("No customer contact IDs found. Cannot generate delete query.");
+        }
+
+        var sqlQuery =
+            $"DELETE FROM {databaseSettings.CustomerContactTableName} WHERE {databaseSettings.CustomerContactIdColName} IN ({string.Join(", ", contactIds)});";
+
+        logger.LogInformation("Generated SQL delete query.");
+
+        return Task.FromResult(sqlQuery);
     }
 
     private List<CustomerContact> GenerateContacts(List<Customer> customers)
