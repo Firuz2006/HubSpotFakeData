@@ -7,7 +7,7 @@ namespace ParadigmFakeData.Services;
 public class ParadigmApiService(ILogger<ParadigmApiService> logger, HttpClient httpClient)
     : IParadigmApiService
 {
-    private const string BaseUrl = "http://192.168.1.130:5001/api";
+    // Base address is configured on the HttpClient in Program.cs
 
     public async Task<List<Customer>> BatchCreateCustomersAsync(List<Customer> customers)
     {
@@ -15,7 +15,7 @@ public class ParadigmApiService(ILogger<ParadigmApiService> logger, HttpClient h
 
         try
         {
-            var response = await httpClient.PostAsJsonAsync($"{BaseUrl}/Customer/batch-create", customers);
+            var response = await httpClient.PostAsJsonAsync("Customer/batch-create", customers);
             response.EnsureSuccessStatusCode();
 
             var result = await response.Content.ReadFromJsonAsync<List<Customer>>();
@@ -50,7 +50,7 @@ public class ParadigmApiService(ILogger<ParadigmApiService> logger, HttpClient h
 
         try
         {
-            var response = await httpClient.PostAsJsonAsync($"{BaseUrl}/CustomerContact/batch-create", contacts);
+            var response = await httpClient.PostAsJsonAsync("CustomerContact/batch-create", contacts);
             response.EnsureSuccessStatusCode();
 
             var result = await response.Content.ReadFromJsonAsync<List<CustomerContact>>();
@@ -82,7 +82,7 @@ public class ParadigmApiService(ILogger<ParadigmApiService> logger, HttpClient h
 
         try
         {
-            var response = await httpClient.PostAsJsonAsync($"{BaseUrl}/Opportunity/batch-create", opportunities);
+            var response = await httpClient.PostAsJsonAsync("Opportunity/batch-create", opportunities);
             response.EnsureSuccessStatusCode();
 
             var result = await response.Content.ReadFromJsonAsync<List<Opportunity>>();
@@ -114,7 +114,7 @@ public class ParadigmApiService(ILogger<ParadigmApiService> logger, HttpClient h
 
         try
         {
-            var response = await httpClient.DeleteAsync($"{BaseUrl}/CustomerContact/{customerId}");
+            var response = await httpClient.DeleteAsync($"CustomerContact/{customerId}");
             response.EnsureSuccessStatusCode();
 
             logger.LogInformation("Successfully deleted customer {CustomerId}", customerId);

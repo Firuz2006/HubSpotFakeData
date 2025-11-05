@@ -15,16 +15,8 @@ public class CustomerContactGenerationService(
     {
         logger.LogInformation("Starting customer contact generation");
 
-        var eligibleCustomers = customers
-            .Where(c => !string.IsNullOrEmpty(c.CustomerId) &&
-                        !(string.IsNullOrEmpty(c.CompanyName) &&
-                          string.IsNullOrEmpty(c.WebsiteUrl) &&
-                          !string.IsNullOrEmpty(c.FirstName) &&
-                          !string.IsNullOrEmpty(c.LastName) &&
-                          !string.IsNullOrEmpty(c.PrimaryEmail) &&
-                          !string.IsNullOrEmpty(c.PrimaryPhone)
-                            ))
-            .ToList();
+        // CustomerContact will create for all 90% of customers with CustomerId
+        var eligibleCustomers = customers.Where(c => !string.IsNullOrEmpty(c.CustomerId)).ToList();
 
         if (eligibleCustomers.Count == 0)
         {
@@ -124,7 +116,7 @@ public class CustomerContactGenerationService(
         string phone;
         do
         {
-            phone = f.Phone.PhoneNumber();
+            phone = f.Phone.PhoneNumber("###-###-####");
         } while (!_usedPhones.Add(phone));
 
         return phone;

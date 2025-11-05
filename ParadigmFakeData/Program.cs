@@ -73,6 +73,13 @@ internal class Program
         configuration.GetSection("DatabaseSettings").Bind(databaseSettings);
         services.AddSingleton(databaseSettings);
 
+        var paradigmApiSection = configuration.GetSection("ParadigmApi");
+        var paradigmBaseUrl = paradigmApiSection.GetValue<string>("BaseUrl");
+        if (string.IsNullOrWhiteSpace(paradigmBaseUrl))
+        {
+            throw new InvalidOperationException("ParadigmApi:BaseUrl must be configured in appsettings.json or user secrets");
+        }
+
         services.AddLogging(builder =>
         {
             builder.AddConsole();
@@ -81,6 +88,7 @@ internal class Program
 
         services.AddHttpClient<IParadigmApiService, ParadigmApiService>(client =>
         {
+            client.BaseAddress = new Uri(paradigmBaseUrl);
             client.DefaultRequestHeaders.Add("x-api-key", generationSettings.ApiKey);
         });
 
