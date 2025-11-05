@@ -11,6 +11,5 @@ public interface IWorkflowOrchestrator
     Task GetDeleteCustomerContactsSqlQueryAsync(string jsonPath);
 
     Task<string> GenerateOpportunitiesAsync(string customersJsonPath);
-    Task PostOpportunitiesAsync(string opportunitiesJsonPath);
     Task GetOpportunitiesDeleteSqlQueryAsync(string jsonPath);
 }

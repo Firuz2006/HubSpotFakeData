@@ -56,17 +56,6 @@ public class FileService(ILogger<FileService> logger) : IFileService
         }
     }
 
-    public string CreateOutputDirectory()
-    {
-        var timestamp = DateTime.Now.ToString("yyyyMMdd_HHmmss");
-        var outputPath = Path.Combine(Directory.GetCurrentDirectory(), $"output_{timestamp}");
-
-        Directory.CreateDirectory(outputPath);
-        logger.LogInformation("Created output directory: {Path}", outputPath);
-
-        return outputPath;
-    }
-
     public async Task<string> SaveTextAsync(string content, string outputPath, string fileName)
     {
         try

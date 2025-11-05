@@ -1,5 +1,6 @@
 ﻿using System.CommandLine;
 using ParadigmFakeData.Services;
+using static ParadigmFakeData.CommandConstants;
 
 namespace ParadigmFakeData;
 
@@ -18,21 +19,20 @@ internal static class CliCommandsExtensions
             .RegisterDeleteCustomerContactsCommand(service)
             // Opportunity
             .RegisterGenerateAndPostOpportunitiesStep(service)
-            .RegisterPostOpportunitiesStep(service)
             .RegisterDeleteOpportunitiesCommand(service);
     }
 
     private static RootCommand CreateRootCommand()
     {
-        return new RootCommand("Paradigm Fake Data Generator");
+        return new RootCommand(RootDescription);
     }
 
     private static RootCommand RegisterDeleteCustomersCommand(this RootCommand rootCommand,
         IWorkflowOrchestrator service)
     {
-        var deleteCommand = new Command("delete-customers", "Delete1 customers from Paradigm using a JSON file")
+        var deleteCommand = new Command(DeleteCustomersName, DeleteCustomersDescription)
         {
-            new Argument<FileInfo>("path", "Path to the customers JSON file")
+            new Argument<FileInfo>(ArgPath, ArgPathDescription)
         };
 
         deleteCommand.SetHandler(async path => await service.GetDeleteCustomersSqlQueryAsync(path.FullName),
@@ -45,9 +45,9 @@ internal static class CliCommandsExtensions
     private static RootCommand RegisterGenerateCustomersStep(this RootCommand rootCommand,
         IWorkflowOrchestrator service)
     {
-        var generateCustomersCommand = new Command("generate-customers", "Generate customers and save to JSON file")
+        var generateCustomersCommand = new Command(GenerateCustomersName, GenerateCustomersDescription)
         {
-            new Argument<DirectoryInfo>("outputPath", "Directory to save the generated customers JSON file")
+            new Argument<DirectoryInfo>(ArgOutputPath, ArgOutputPathDescription)
         };
 
         generateCustomersCommand.SetHandler(async outputPath =>
@@ -60,12 +60,12 @@ internal static class CliCommandsExtensions
 
     private static RootCommand RegisterPostCustomersStep(this RootCommand rootCommand, IWorkflowOrchestrator service)
     {
-        var postCustomersCommand = new Command("post-customers", "Post customers from JSON file to Paradigm")
+        var postCustomersCommand = new Command(PostCustomersName, PostCustomersDescription)
         {
-            new Argument<FileInfo>("customersJsonPath", "Path to the customers JSON file")
+            new Argument<FileInfo>(ArgCustomersJsonPath, ArgCustomersJsonPathDescription)
         };
 
-        postCustomersCommand.SetHandler(async (customersJsonPath) =>
+        postCustomersCommand.SetHandler(async customersJsonPath =>
                 await service.PostCustomersAsync(customersJsonPath.FullName),
             postCustomersCommand.Arguments.Cast<Argument<FileInfo>>().First());
 
@@ -75,9 +75,9 @@ internal static class CliCommandsExtensions
 
     private static RootCommand RegisterGenerateContactsStep(this RootCommand rootCommand, IWorkflowOrchestrator service)
     {
-        var generateContactsCommand = new Command("generate-contacts", "Generate contacts and save to JSON file")
+        var generateContactsCommand = new Command(GenerateContactsName, GenerateContactsDescription)
         {
-            new Argument<FileInfo>("customersJsonPath", "Path to the customers JSON file")
+            new Argument<FileInfo>(ArgCustomersJsonPath, ArgCustomersJsonPathDescription)
         };
 
         generateContactsCommand.SetHandler(async customersJsonPath =>
@@ -90,9 +90,9 @@ internal static class CliCommandsExtensions
 
     private static RootCommand RegisterPostContactsStep(this RootCommand rootCommand, IWorkflowOrchestrator service)
     {
-        var postContactsCommand = new Command("post-contacts", "Post contacts from JSON file to Paradigm")
+        var postContactsCommand = new Command(PostContactsName, PostContactsDescription)
         {
-            new Argument<FileInfo>("contactsJsonPath", "Path to the contacts JSON file")
+            new Argument<FileInfo>(ArgContactsJsonPath, ArgContactsJsonPathDescription)
         };
 
         postContactsCommand.SetHandler(async contactsJsonPath =>
@@ -107,9 +107,9 @@ internal static class CliCommandsExtensions
         IWorkflowOrchestrator service)
     {
         var generateAndPostOpportunitiesCommand =
-            new Command("generate-post-opportunities", "Generate and post opportunities to Paradigm")
+            new Command(GenerateAndPostOpportunitiesName, GenerateAndPostOpportunitiesDescription)
             {
-                new Argument<FileInfo>("customerJsonPath", "Path to the customers JSON file")
+                new Argument<FileInfo>(ArgCustomerJsonPath, ArgCustomerJsonPathDescription)
             };
 
         generateAndPostOpportunitiesCommand.SetHandler(async customerJsonPath =>
@@ -120,30 +120,13 @@ internal static class CliCommandsExtensions
         return rootCommand;
     }
 
-    private static RootCommand RegisterPostOpportunitiesStep(this RootCommand rootCommand,
-        IWorkflowOrchestrator service)
-    {
-        var postOpportunitiesCommand =
-            new Command("post-opportunities", "Post opportunities from JSON file to Paradigm")
-            {
-                new Argument<FileInfo>("opportunitiesJsonPath", "Path to the opportunities JSON file")
-            };
-
-        postOpportunitiesCommand.SetHandler(async opportunitiesJsonPath =>
-                await service.PostOpportunitiesAsync(opportunitiesJsonPath.FullName),
-            postOpportunitiesCommand.Arguments.Cast<Argument<FileInfo>>().First());
-
-        rootCommand.AddCommand(postOpportunitiesCommand);
-        return rootCommand;
-    }
-
     private static RootCommand RegisterDeleteCustomerContactsCommand(this RootCommand rootCommand,
         IWorkflowOrchestrator service)
     {
-        var deleteContactsCommand = new Command("delete-customer-contacts",
-            "Generate SQL to delete customer contacts from Paradigm using a JSON file")
+        var deleteContactsCommand = new Command(DeleteCustomerContactsName,
+            DeleteCustomerContactsDescription)
         {
-            new Argument<FileInfo>("path", "Path to the customer contacts JSON file")
+            new Argument<FileInfo>(ArgPath, ArgPathDescription)
         };
 
         deleteContactsCommand.SetHandler(
@@ -157,10 +140,10 @@ internal static class CliCommandsExtensions
     private static RootCommand RegisterDeleteOpportunitiesCommand(this RootCommand rootCommand,
         IWorkflowOrchestrator service)
     {
-        var deleteOpportunitiesCommand = new Command("delete-opportunities",
-            "Generate SQL to delete opportunities from Paradigm using a JSON file")
+        var deleteOpportunitiesCommand = new Command(DeleteOpportunitiesName,
+            DeleteOpportunitiesDescription)
         {
-            new Argument<FileInfo>("path", "Path to the opportunities JSON file")
+            new Argument<FileInfo>(ArgPath, ArgPathDescription)
         };
 
         deleteOpportunitiesCommand.SetHandler(

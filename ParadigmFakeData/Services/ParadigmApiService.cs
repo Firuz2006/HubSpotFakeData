@@ -45,7 +45,8 @@ public class ParadigmApiService(ILogger<ParadigmApiService> logger, HttpClient h
     {
         logger.LogInformation("Sending {Count} customer contacts to Paradigm API...", contacts.Count);
 
-        if (contacts == null || contacts.Count == 0) throw new InvalidOperationException("No customer contacts to post");
+        if (contacts == null || contacts.Count == 0)
+            throw new InvalidOperationException("No customer contacts to post");
 
         try
         {

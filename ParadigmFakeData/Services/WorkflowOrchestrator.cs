@@ -161,27 +161,6 @@ public class WorkflowOrchestrator(
         return opportunitiesPath;
     }
 
-    public async Task PostOpportunitiesAsync(string opportunitiesJsonPath)
-    {
-        logger.LogInformation("=== POST OPPORTUNITIES TO PARADIGM ===");
-
-        var opportunities = await ReadJsonListAsync<Opportunity>(opportunitiesJsonPath);
-        if (opportunities == null || opportunities.Count == 0)
-            throw new InvalidOperationException("Failed to read opportunities");
-
-        var posted = await paradigmApiService.BatchCreateOpportunitiesAsync(opportunities);
-
-        var saved = await SaveJsonNextToInputAsync(opportunitiesJsonPath, posted, "opportunities_posted.json");
-
-        Console.WriteLine();
-        Console.ForegroundColor = ConsoleColor.Green;
-        Console.WriteLine("✓ Opportunities posted successfully!");
-        var displayPath = saved.Replace("\\", "/");
-        Console.WriteLine($"📄 Posted file: file:///{displayPath}");
-        Console.ResetColor();
-        Console.WriteLine();
-    }
-
     public async Task GetOpportunitiesDeleteSqlQueryAsync(string jsonPath)
     {
         logger.LogInformation("=== DELETE OPPORTUNITIES ===");
